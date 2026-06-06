@@ -1,26 +1,33 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export default withAuth(
-  function middleware(req) {
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Always public — no auth check
+  if (
+    pathname.startsWith("/demo") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/gcal") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/public") ||
+    pathname.includes("favicon") ||
+    pathname.includes(".")          // static files
+  ) {
     return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized({ token, req }) {
-        // /demo/* is always public — no login required
-        if (req.nextUrl.pathname.startsWith("/demo")) return true;
-        return !!token;
-      },
-    },
-    pages: {
-      signIn: "/login",
-    },
   }
-);
+
+  // Require auth for everything else
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: [
-    "/((?!login|signup|demo|api/auth|api/gcal|_next/static|_next/image|favicon.ico|public).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image).*)"],
 };
