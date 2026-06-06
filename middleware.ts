@@ -7,7 +7,9 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized({ token }) {
+      authorized({ token, req }) {
+        // /demo/* is always public — no login required
+        if (req.nextUrl.pathname.startsWith("/demo")) return true;
         return !!token;
       },
     },
