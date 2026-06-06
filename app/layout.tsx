@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" className={geist.variable}>
+    <html lang="de" className={geist.variable} data-theme="dark">
       <body>
         <SessionWrapper>
           <ThemeProvider>
