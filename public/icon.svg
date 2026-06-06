@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#0A0908"/>
+  <!-- Gold circle bg -->
+  <circle cx="256" cy="256" r="180" fill="#1C1814"/>
+  <!-- Scissors icon (stylised ✂) -->
+  <!-- Left blade -->
+  <path d="M200 160 C185 160 172 170 168 184 C164 198 170 213 182 221 L280 300 L310 265 Z" fill="#D4B077" opacity="0.15"/>
+  <!-- Right blade -->
+  <path d="M312 160 C327 160 340 170 344 184 C348 198 342 213 330 221 L232 300 L202 265 Z" fill="#D4B077" opacity="0.15"/>
+  <!-- Zap / lightning bolt (main icon) -->
+  <path d="M276 148 L220 268 L258 268 L236 364 L292 244 L254 244 Z" fill="#D4B077" stroke="#D4B077" stroke-width="2" stroke-linejoin="round"/>
+</svg>

@@ -2,43 +2,159 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
 import {
   LayoutDashboard, Inbox, CalendarDays, Users, Settings,
-  Sun, Moon, Zap,
+  BarChart2, FileText, Link2, Scissors, Search,
+  Sun, Moon, Zap, UserSquare2, LogOut, ChevronUp,
+  HelpCircle, Send, X, Crown, Camera, Bell, MessageCircle,
+  Clock, RefreshCw, type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { useBeta } from "@/lib/beta-context";
 import { motion, AnimatePresence } from "framer-motion";
 
-const NAV = [
-  { href: "/",        label: "Übersicht", icon: LayoutDashboard },
-  { href: "/inbox",   label: "Inbox",     icon: Inbox },
-  { href: "/kalender",label: "Kalender",  icon: CalendarDays },
-  { href: "/crm",     label: "Kunden",    icon: Users },
-  { href: "/settings",label: "Settings",  icon: Settings },
+/* ─── Types ─────────────────────────────────────────────── */
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  shortcut?: string;
+  badge?: number;
+  disabled?: boolean;
+};
+
+/* ─── Nav config ─────────────────────────────────────────── */
+const WORKSPACE: NavItem[] = [
+  { href: "/",         label: "Übersicht", icon: LayoutDashboard, shortcut: "⌘1" },
+  { href: "/inbox",    label: "Inbox",     icon: Inbox,           shortcut: "⌘2", badge: 3 },
+  { href: "/kalender", label: "Kalender",  icon: CalendarDays,    shortcut: "⌘3" },
+  { href: "/crm",      label: "Kunden",    icon: Users,           shortcut: "⌘4" },
 ];
 
-function ThemeButton() {
+const ANALYSE: NavItem[] = [
+  { href: "/analytics", label: "Analytics", icon: BarChart2  },
+  { href: "/reports",   label: "Reports",   icon: FileText   },
+  { href: "/winback",   label: "Win-Back",  icon: RefreshCw  },
+];
+
+const CONFIG: NavItem[] = [
+  { href: "/services",     label: "Services",      icon: Scissors     },
+  { href: "/mitarbeiter",  label: "Team",           icon: UserSquare2  },
+  { href: "/settings",     label: "Einstellungen",  icon: Settings, shortcut: "⌘5" },
+  { href: "/integrations", label: "Integrationen",  icon: Link2        },
+];
+
+const PAGE_LABELS: Record<string, string> = {
+  "/":             "Übersicht",
+  "/inbox":        "Inbox",
+  "/kalender":     "Kalender",
+  "/crm":          "Kunden",
+  "/analytics":    "Analytics",
+  "/reports":      "Reports",
+  "/winback":      "Win-Back Maschine",
+  "/services":     "Services",
+  "/mitarbeiter":  "Team",
+  "/settings":     "Einstellungen",
+  "/integrations": "Integrationen",
+};
+
+const PLAN_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  starter: { label: "Basis",  color: "var(--c-fg-subtle)", bg: "var(--c-bg-strong)"         },
+  pro:     { label: "Pro",    color: "var(--c-accent)",    bg: "rgba(212,176,119,0.14)"      },
+  custom:  { label: "Custom", color: "#a78bfa",            bg: "rgba(167,139,250,0.12)"      },
+};
+
+const SUPPORT_CATS = [
+  "Technisches Problem",
+  "Frage zur Funktion",
+  "Abrechnung / Abo",
+  "Datenschutz / DSGVO",
+  "Feedback / Verbesserungsvorschlag",
+  "Sonstiges",
+];
+
+const AUTH_ROUTES = ["/login", "/signup"];
+const PUBLIC_PREFIXES = ["/demo"];
+
+/* ─── Helpers ────────────────────────────────────────────── */
+function usePageLabel(pathname: string) {
+  if (pathname === "/") return "Übersicht";
+  const key = Object.keys(PAGE_LABELS).find(k => k !== "/" && pathname.startsWith(k));
+  return key ? PAGE_LABELS[key] : "Dashboard";
+}
+
+function isActive(href: string, pathname: string) {
+  if (href === "/") return pathname === "/";
+  return pathname.startsWith(href);
+}
+
+/* ─── NavSection ─────────────────────────────────────────── */
+function NavSection({ label, items, pathname, hrefTransform }: {
+  label: string; items: NavItem[]; pathname: string;
+  hrefTransform?: (href: string) => string;
+}) {
+  const xfm = hrefTransform ?? ((h: string) => h);
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-fg-subtle)", padding: "0 10px", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.6 }}>
+        {label}
+      </div>
+      {items.map(item => {
+        const resolvedHref = xfm(item.href);
+        const active = !item.disabled && isActive(resolvedHref, pathname);
+        const row = (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            height: 32, padding: "0 10px", borderRadius: 6,
+            borderLeft: active ? "2px solid var(--c-accent)" : "2px solid transparent",
+            paddingLeft: active ? 8 : 10,
+            background: active ? "var(--c-bg-subtle)" : "transparent",
+            opacity: item.disabled ? 0.35 : 1,
+            cursor: item.disabled ? "default" : "pointer",
+            transition: "background 0.12s",
+          }}>
+            <item.icon size={14} strokeWidth={1.6} style={{ color: active ? "var(--c-fg)" : "var(--c-fg-subtle)", flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: 13, fontWeight: active ? 500 : 400, color: active ? "var(--c-fg)" : "var(--c-fg-muted)", whiteSpace: "nowrap" }}>
+              {item.label}
+            </span>
+            {item.badge != null && item.badge > 0 && (
+              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--c-accent)", background: "var(--c-accent-bg)", padding: "0 5px", borderRadius: 4, lineHeight: "18px" }}>
+                {item.badge}
+              </span>
+            )}
+            {item.shortcut && (
+              <span style={{ fontSize: 11, color: "var(--c-fg-faint)" }}>{item.shortcut}</span>
+            )}
+          </div>
+        );
+
+        if (item.disabled || item.href === "#") {
+          return <div key={item.label} style={{ marginBottom: 1 }}>{row}</div>;
+        }
+        return (
+          <Link key={resolvedHref} href={resolvedHref} style={{ display: "block", textDecoration: "none", marginBottom: 1 }}>
+            <motion.div whileHover={!active ? { backgroundColor: "var(--c-bg-subtle)" } : {}} style={{ borderRadius: 6 }}>
+              {row}
+            </motion.div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── ThemeToggle ────────────────────────────────────────── */
+function ThemeToggle() {
   const { theme, toggle } = useTheme();
   return (
-    <motion.button
-      whileTap={{ scale: 0.85 }}
-      onClick={toggle}
-      className="btn-ghost"
-      style={{ padding: "8px 10px", borderRadius: 10, border: "none", background: "transparent" }}
-      title={theme === "dark" ? "Helles Design" : "Dunkles Design"}
-    >
+    <motion.button whileTap={{ scale: 0.85 }} onClick={toggle} className="btn-icon" title={theme === "dark" ? "Hell" : "Dunkel"}>
       <AnimatePresence mode="wait" initial={false}>
-        <motion.span
-          key={theme}
-          initial={{ rotate: -30, opacity: 0, scale: 0.6 }}
-          animate={{ rotate: 0, opacity: 1, scale: 1 }}
-          exit={{ rotate: 30, opacity: 0, scale: 0.6 }}
-          transition={{ duration: 0.2 }}
-          style={{ display: "flex" }}
-        >
+        <motion.span key={theme} initial={{ rotate: -20, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 20, opacity: 0 }} transition={{ duration: 0.18 }} style={{ display: "flex" }}>
           {theme === "dark"
-            ? <Sun size={18} style={{ color: "var(--accent)" }} />
-            : <Moon size={18} style={{ color: "var(--text-sub)" }} />
+            ? <Sun size={15} style={{ color: "var(--c-fg-subtle)" }} />
+            : <Moon size={15} style={{ color: "var(--c-fg-subtle)" }} />
           }
         </motion.span>
       </AnimatePresence>
@@ -46,147 +162,816 @@ function ThemeButton() {
   );
 }
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+/* ─── PaulPulse ──────────────────────────────────────────── */
+function PaulPulse() {
+  return (
+    <motion.span
+      animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
+      transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+      style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "var(--c-success)", boxShadow: "0 0 0 2px rgba(34,197,94,0.25)", flexShrink: 0 }}
+    />
+  );
+}
+
+/* ─── SupportModal ───────────────────────────────────────── */
+function SupportModal({ onClose }: { onClose: () => void }) {
+  const { data: session } = useSession();
+  const [category, setCategory] = useState(SUPPORT_CATS[0]);
+  const [subject,  setSubject]  = useState("");
+  const [body,     setBody]     = useState("");
+  const email = session?.user?.email ?? "";
+  const name  = session?.user?.name  ?? "";
+
+  const inp: React.CSSProperties = {
+    width: "100%", padding: "9px 12px", borderRadius: 8, fontSize: 13,
+    background: "var(--c-bg)", border: "1px solid var(--c-border)",
+    color: "var(--c-fg)", outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+  };
+
+  function send() {
+    const to  = "ejs-solution@outlook.de";
+    const sub = encodeURIComponent(`[CUTZ Support] ${category}${subject ? ` – ${subject}` : ""}`);
+    const msg = encodeURIComponent(`Von: ${name} (${email})\nKategorie: ${category}\n\n${body}\n\n---\nGesendet aus CUTZ Solution Dashboard`);
+    window.location.href = `mailto:${to}?subject=${sub}&body=${msg}`;
+    onClose();
+  }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
+    <>
+      <motion.div
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", zIndex: 500 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94, y: 16 }}
+        transition={{ type: "spring", stiffness: 340, damping: 28 }}
+        style={{
+          position: "fixed", zIndex: 501,
+          top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          width: "min(480px, calc(100vw - 32px))",
+          background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)",
+          borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+        }}
+      >
+        <div style={{ height: 3, background: "var(--c-accent)" }} />
+        <div style={{ padding: 24 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(212,176,119,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <HelpCircle size={18} style={{ color: "var(--c-accent)" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-fg)" }}>Support kontaktieren</div>
+                <div style={{ fontSize: 12, color: "var(--c-fg-subtle)", marginTop: 1 }}>ejs-solution@outlook.de</div>
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+              <X size={17} style={{ color: "var(--c-fg-muted)" }} />
+            </button>
+          </div>
 
-      {/* ── Desktop Sidebar ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 700, color: "var(--c-fg-subtle)", display: "block", marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.6 }}>Kategorie</label>
+              <select value={category} onChange={e => setCategory(e.target.value)} style={{ ...inp, cursor: "pointer" }}>
+                {SUPPORT_CATS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 700, color: "var(--c-fg-subtle)", display: "block", marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.6 }}>Betreff <span style={{ opacity: 0.5 }}>(optional)</span></label>
+              <input style={inp} placeholder="Kurze Beschreibung…" value={subject} onChange={e => setSubject(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 700, color: "var(--c-fg-subtle)", display: "block", marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.6 }}>Problembeschreibung *</label>
+              <textarea rows={5} style={{ ...inp, resize: "vertical" }} placeholder="Beschreibe dein Problem so genau wie möglich…" value={body} onChange={e => setBody(e.target.value)} />
+            </div>
+            {email && (
+              <div style={{ fontSize: 12, color: "var(--c-fg-subtle)", background: "var(--c-bg-subtle)", borderRadius: 8, padding: "8px 12px" }}>
+                Gesendet als <strong style={{ color: "var(--c-fg)" }}>{email}</strong>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+            <button
+              onClick={send} disabled={!body.trim()}
+              style={{
+                flex: 1, padding: "10px 0", borderRadius: 8, fontWeight: 700, fontSize: 13,
+                background: body.trim() ? "var(--c-accent)" : "var(--c-bg-strong)",
+                color: body.trim() ? "var(--c-accent-fg)" : "var(--c-fg-subtle)",
+                border: "none", cursor: body.trim() ? "pointer" : "not-allowed",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}
+            >
+              <Send size={14} /> E-Mail senden
+            </button>
+            <button onClick={onClose} style={{ padding: "10px 16px", borderRadius: 8, fontWeight: 600, fontSize: 13, background: "transparent", color: "var(--c-fg-muted)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
+/* ─── UserCard (oben links in Sidebar) ───────────────────── */
+function UserCard() {
+  const { data: session }   = useSession();
+  const [open, setOpen]     = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const wrapRef             = useRef<HTMLDivElement>(null);
+  const fileRef             = useRef<HTMLInputElement>(null);
+
+  const name     = session?.user?.name  ?? "Demo User";
+  const email    = session?.user?.email ?? "demo@cutzsolution.com";
+  const initials = name.split(" ").map((n: string) => n[0] ?? "").join("").slice(0, 2).toUpperCase();
+  const rawPlan  = (session?.user as { plan?: string } | undefined)?.plan ?? "starter";
+  const plan     = PLAN_LABELS[rawPlan] ?? PLAN_LABELS.starter;
+
+  // Load saved avatar
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`cutz_avatar_${email}`);
+      if (saved) setAvatar(saved);
+    } catch { /* noop */ }
+  }, [email]);
+
+  // Close on outside click
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const b64 = ev.target?.result as string;
+      setAvatar(b64);
+      try { localStorage.setItem(`cutz_avatar_${email}`, b64); } catch { /* noop */ }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  function removeAvatar() {
+    setAvatar(null);
+    try { localStorage.removeItem(`cutz_avatar_${email}`); } catch { /* noop */ }
+  }
+
+  /** Small circular avatar used in the trigger row */
+  const AvatarImg = ({ size, fs }: { size: number; fs: number }) => (
+    <div style={{
+      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+      overflow: "hidden", background: avatar ? "transparent" : "var(--c-accent)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      border: "1.5px solid var(--c-border)",
+    }}>
+      {avatar
+        ? <img src={avatar} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        : <span style={{ fontSize: fs, fontWeight: 800, color: "var(--c-accent-fg)", lineHeight: 1, userSelect: "none" }}>{initials}</span>
+      }
+    </div>
+  );
+
+  const menuRow: React.CSSProperties = {
+    width: "100%", display: "flex", alignItems: "center", gap: 9,
+    padding: "10px 14px", border: "none", background: "transparent",
+    fontSize: 13, cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+    transition: "background 0.12s",
+  };
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative", padding: "0 8px 8px" }}>
+      {/* Hidden file input */}
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFile} />
+
+      {/* ── Trigger button ── */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 9,
+          padding: "8px 10px", borderRadius: 10,
+          border: `1px solid ${open ? "var(--c-accent)" : "var(--c-border)"}`,
+          background: open ? "var(--c-bg-subtle)" : "transparent",
+          cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s",
+        }}
+      >
+        <AvatarImg size={30} fs={11} />
+        <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 }}>
+            {name}
+          </div>
+          <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 3, color: plan.color, background: plan.bg, marginTop: 2, display: "inline-block" }}>
+            {plan.label}
+          </span>
+        </div>
+        <ChevronUp size={13} style={{ color: "var(--c-fg-subtle)", flexShrink: 0, transform: open ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }} />
+      </button>
+
+      {/* ── Dropdown (opens downward) ── */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            style={{
+              position: "absolute", top: "calc(100% + 6px)", left: 8, right: 8, zIndex: 300,
+              background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)",
+              borderRadius: 12, overflow: "hidden", boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
+            }}
+          >
+            {/* Profile info */}
+            <div style={{ padding: "16px 14px 12px" }}>
+              {/* Avatar with hover-to-change */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <div
+                  style={{ position: "relative", flexShrink: 0, cursor: "pointer" }}
+                  onClick={() => fileRef.current?.click()}
+                  title="Profilbild ändern"
+                >
+                  <AvatarImg size={48} fs={17} />
+                  {/* Camera overlay */}
+                  <div style={{
+                    position: "absolute", inset: 0, borderRadius: "50%",
+                    background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center",
+                    opacity: 0, transition: "opacity 0.15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = "0"; }}
+                  >
+                    <Camera size={15} color="#fff" />
+                  </div>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+                  <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>{email}</div>
+                </div>
+              </div>
+
+              {/* Plan badge */}
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700,
+                color: plan.color, background: plan.bg, border: `1px solid ${plan.color}30`,
+              }}>
+                <Crown size={11} /> {plan.label} Plan
+              </div>
+            </div>
+
+            {/* Menu items */}
+            <div style={{ borderTop: "1px solid var(--c-border)" }}>
+              <button
+                style={{ ...menuRow, color: "var(--c-fg-muted)" }}
+                onClick={() => fileRef.current?.click()}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--c-bg-subtle)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+              >
+                <Camera size={14} /> Profilbild ändern
+              </button>
+
+              {avatar && (
+                <button
+                  style={{ ...menuRow, color: "var(--c-fg-subtle)" }}
+                  onClick={removeAvatar}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--c-bg-subtle)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                >
+                  <X size={14} /> Profilbild entfernen
+                </button>
+              )}
+
+              <Link
+                href="/settings"
+                onClick={() => setOpen(false)}
+                style={{ ...menuRow as React.CSSProperties, textDecoration: "none", display: "flex", color: "var(--c-fg-muted)" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--c-bg-subtle)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+              >
+                <Settings size={14} /> Kontoeinstellungen
+              </Link>
+
+              <button
+                style={{ ...menuRow, color: "#ef4444", fontWeight: 600, borderTop: "1px solid var(--c-border)" }}
+                onClick={() => { setOpen(false); signOut({ callbackUrl: "/login" }); }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.07)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+              >
+                <LogOut size={14} /> Abmelden
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─── Waitlist data ──────────────────────────────────────── */
+const FREED_SLOT = { time: "14:00", duration: 60, employee: "Aynur", service: "Damenhaarschnitt" };
+
+const WAITLIST_CUSTOMERS = [
+  {
+    name: "Büşra Şahin",
+    phone: "+4917623456789",
+    phoneDisplay: "+49 176 2345 6789",
+    service: "Haarpflege",
+    flag: "🇹🇷",
+    avatar: "BŞ",
+    color: "#10b981",
+  },
+  {
+    name: "Ayşe Doğan",
+    phone: "+4917787654321",
+    phoneDisplay: "+49 177 8765 4321",
+    service: "Dauerwelle",
+    flag: "🇹🇷",
+    avatar: "AD",
+    color: "#60a5fa",
+  },
+  {
+    name: "Emma Johnson",
+    phone: "+4915745678901",
+    phoneDisplay: "+49 157 4567 8901",
+    service: "Keratin-Behandlung",
+    flag: "🇬🇧",
+    avatar: "EJ",
+    color: "#D4B077",
+  },
+];
+
+function waMsg(customer: typeof WAITLIST_CUSTOMERS[0]) {
+  return `Hallo ${customer.name.split(" ")[0]}! 👋\n\nEin Termin um *${FREED_SLOT.time} Uhr* (${FREED_SLOT.duration} Min.) bei *${FREED_SLOT.employee}* ist gerade kurzfristig freigeworden!\n\nDa du auf unserer Warteliste stehst: Möchtest du diesen Slot übernehmen? 🙌\n\nEinfach kurz antworten – wir reservieren ihn sofort für dich.\n\nDein CUTZ Solution Team ✂️`;
+}
+
+/* ─── WaitlistModal ──────────────────────────────────────── */
+function WaitlistModal({ onClose }: { onClose: () => void }) {
+  const [sent, setSent] = useState<Record<string, boolean>>({});
+
+  function openWhatsApp(c: typeof WAITLIST_CUSTOMERS[0]) {
+    const url = `https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(waMsg(c))}`;
+    window.open(url, "_blank");
+    setSent(s => ({ ...s, [c.name]: true }));
+  }
+
+  function sendAll() {
+    WAITLIST_CUSTOMERS.forEach((c, i) => {
+      setTimeout(() => openWhatsApp(c), i * 600);
+    });
+  }
+
+  return (
+    <>
+      <motion.div
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", zIndex: 600 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.93, y: 20 }}
+        transition={{ type: "spring", stiffness: 340, damping: 28 }}
+        style={{
+          position: "fixed", zIndex: 601,
+          top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          width: "min(560px, calc(100vw - 24px))",
+          background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)",
+          borderRadius: 18, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        }}
+      >
+        <div style={{ height: 3, background: "linear-gradient(90deg,#D4B077,#f59e0b)" }} />
+        <div style={{ padding: "22px 24px 20px" }}>
+
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>
+                Warteliste kontaktieren
+              </div>
+              <div style={{ fontSize: 12, color: "var(--c-fg-subtle)" }}>
+                Slot: <strong style={{ color: "var(--c-accent)" }}>{FREED_SLOT.time} Uhr · {FREED_SLOT.duration} Min. · {FREED_SLOT.employee}</strong> — 3 passende Kunden
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
+              <X size={17} style={{ color: "var(--c-fg-muted)" }} />
+            </button>
+          </div>
+
+          {/* Customer cards */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+            {WAITLIST_CUSTOMERS.map(c => (
+              <div key={c.name} style={{
+                background: "var(--c-bg-subtle)", border: `1px solid ${sent[c.name] ? "#10b98140" : "var(--c-border)"}`,
+                borderRadius: 12, padding: "14px 16px",
+                display: "flex", alignItems: "flex-start", gap: 12,
+                transition: "border-color 0.2s",
+              }}>
+                {/* Avatar */}
+                <div style={{
+                  width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
+                  background: `${c.color}22`, border: `1.5px solid ${c.color}50`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, fontWeight: 800, color: c.color,
+                }}>
+                  {c.avatar}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)", marginBottom: 1 }}>
+                    {c.flag} {c.name}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginBottom: 8 }}>
+                    {c.phoneDisplay} · wartet auf: {c.service}
+                  </div>
+                  {/* Message preview */}
+                  <div style={{
+                    fontSize: 11, color: "var(--c-fg-muted)", background: "var(--c-bg)",
+                    border: "1px solid var(--c-border)", borderRadius: 8, padding: "8px 10px",
+                    lineHeight: 1.5, whiteSpace: "pre-wrap", maxHeight: 70, overflow: "hidden",
+                    position: "relative",
+                  }}>
+                    {waMsg(c).slice(0, 120)}…
+                  </div>
+                </div>
+                <button
+                  onClick={() => openWhatsApp(c)}
+                  style={{
+                    flexShrink: 0, padding: "7px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                    background: sent[c.name] ? "rgba(16,185,129,0.12)" : "#25D366",
+                    color: sent[c.name] ? "#10b981" : "#fff",
+                    border: sent[c.name] ? "1px solid #10b98140" : "none", cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 5, transition: "all 0.2s",
+                  }}
+                >
+                  <MessageCircle size={13} />
+                  {sent[c.name] ? "Gesendet ✓" : "WhatsApp"}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Send all */}
+          <button
+            onClick={sendAll}
+            style={{
+              width: "100%", padding: "12px 0", borderRadius: 10, fontWeight: 800, fontSize: 14,
+              background: "linear-gradient(135deg,#D4B077,#f59e0b)",
+              color: "#0A0908", border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}
+          >
+            <MessageCircle size={16} />
+            Alle 3 gleichzeitig per WhatsApp kontaktieren
+          </button>
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
+/* ─── WaitlistBanner ─────────────────────────────────────── */
+function WaitlistBanner() {
+  const [visible, setVisible]     = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    // Show once per session after 3s delay (simulates real-time cancellation)
+    const shown = sessionStorage.getItem("waitlist_shown");
+    if (shown) return;
+    const t = setTimeout(() => {
+      setVisible(true);
+      sessionStorage.setItem("waitlist_shown", "1");
+    }, 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <>
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            initial={{ opacity: 0, y: -60 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -60 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            style={{
+              position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)",
+              zIndex: 500, width: "min(680px, calc(100vw - 32px))",
+              background: "var(--c-bg-elevated)",
+              border: "1px solid rgba(212,176,119,0.5)",
+              borderLeft: "4px solid var(--c-accent)",
+              borderRadius: 14,
+              boxShadow: "0 8px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(212,176,119,0.15)",
+              padding: "14px 16px",
+              display: "flex", alignItems: "center", gap: 14,
+            }}
+          >
+            {/* Icon */}
+            <motion.div
+              animate={{ scale: [1, 1.15, 1] }}
+              transition={{ repeat: 3, duration: 0.4 }}
+              style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: "rgba(212,176,119,0.15)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Bell size={18} style={{ color: "var(--c-accent)" }} />
+            </motion.div>
+
+            {/* Text */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--c-fg)", marginBottom: 2 }}>
+                Termin um {FREED_SLOT.time} Uhr freigeworden
+                <span style={{ fontWeight: 500, color: "var(--c-fg-subtle)", marginLeft: 8 }}>
+                  · {FREED_SLOT.employee} · {FREED_SLOT.duration} Min. · {FREED_SLOT.service}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: "var(--c-fg-subtle)" }}>
+                <span style={{ color: "var(--c-accent)", fontWeight: 700 }}>3 Kunden</span>
+                {" "}auf der Warteliste passen in diesen Slot
+              </div>
+            </div>
+
+            {/* CTA */}
+            <button
+              onClick={() => setShowModal(true)}
+              style={{
+                flexShrink: 0, padding: "9px 16px", borderRadius: 9, fontSize: 12, fontWeight: 800,
+                background: "var(--c-accent)", color: "var(--c-accent-fg)", border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+              }}
+            >
+              <MessageCircle size={13} />
+              Jetzt alle fragen
+            </button>
+
+            {/* Dismiss */}
+            <button
+              onClick={() => setVisible(false)}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 4, flexShrink: 0, display: "flex" }}
+            >
+              <X size={16} style={{ color: "var(--c-fg-subtle)" }} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showModal && <WaitlistModal onClose={() => setShowModal(false)} />}
+      </AnimatePresence>
+    </>
+  );
+}
+
+/* ─── AppShell ───────────────────────────────────────────── */
+export default function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname      = usePathname();
+  const pageLabel     = usePageLabel(pathname);
+  const [showSupport, setShowSupport] = useState(false);
+  const { betaMode, toggleBeta } = useBeta();
+  // Detect showroom from URL — ShowroomProvider lives below AppShell in the tree
+  const showroom = pathname.startsWith("/demo");
+  const navHref = (href: string) => showroom ? `/demo${href === "/" ? "" : href}` : href;
+
+  if (AUTH_ROUTES.some(r => pathname.startsWith(r))) {
+    return <>{children}</>;
+  }
+  // Public demo routes — render full shell but without session requirement
+  const isPublic = PUBLIC_PREFIXES.some(p => pathname.startsWith(p));
+
+  const today = new Date().toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+
+  return (
+    <div style={{ display: "flex", minHeight: "100vh", background: "var(--c-bg)" }}>
+
+      {/* ══ Desktop Sidebar ══════════════════════════════════ */}
       <aside
         className="hidden md:flex"
         style={{
-          width: 220,
-          flexShrink: 0,
-          flexDirection: "column",
-          background: "var(--surface)",
-          borderRight: "1px solid var(--border)",
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-          overflowY: "auto",
+          width: 220, flexShrink: 0, flexDirection: "column",
+          background: "var(--c-bg-elevated)", borderRight: "1px solid var(--c-border)",
+          position: "sticky", top: 0, height: "100vh", overflowY: "auto",
         }}
       >
-        {/* Logo */}
-        <div style={{ padding: "22px 18px 16px", borderBottom: "1px solid var(--border)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <motion.div
-              whileHover={{ scale: 1.08 }}
-              style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: "var(--accent)",
-                boxShadow: "var(--shadow-accent)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Zap size={18} color="#0a0a18" strokeWidth={2.5} />
-            </motion.div>
-            <div>
-              <div style={{ fontWeight: 900, fontSize: 15, color: "var(--text)", letterSpacing: -0.3 }}>
-                Cutz Solution
-              </div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Salon OS · Paul KI
-              </div>
-            </div>
+        {/* Logo (klein, nur Branding) */}
+        <div style={{ padding: "10px 16px 8px", borderBottom: "1px solid var(--c-border)", display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{ width: 20, height: 20, borderRadius: 5, background: "var(--c-accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Zap size={10} color="var(--c-accent-fg)" strokeWidth={2.5} />
           </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-subtle)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+            Cutz Solution
+          </span>
         </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: "10px 8px" }}>
-          {NAV.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || (href !== "/" && pathname.startsWith(href));
-            return (
-              <Link key={href} href={href} className={`nav-link ${active ? "active" : ""}`} style={{ marginBottom: 2, position: "relative" }}>
-                {active && (
-                  <motion.div
-                    layoutId="sidebar-indicator"
-                    style={{
-                      position: "absolute", inset: 0,
-                      background: "var(--accent-glow)",
-                      border: "1px solid rgba(245,158,11,0.25)",
-                      borderRadius: 10,
-                      zIndex: -1,
-                    }}
-                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                  />
-                )}
-                <Icon size={16} style={{ color: active ? "var(--accent)" : undefined }} />
-                <span style={{ color: active ? "var(--text)" : undefined }}>{label}</span>
-              </Link>
-            );
-          })}
+        {/* ── Benutzer oben links ── */}
+        <div style={{ borderBottom: "1px solid var(--c-border)", padding: "10px 0 8px" }}>
+          {showroom ? (
+            <div style={{ padding: "8px 16px", display: "flex", alignItems: "center", gap: 9 }}>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,176,119,0.2)", border: "1.5px solid rgba(212,176,119,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "var(--c-accent)" }}>DS</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-fg)" }}>Demo Salon</div>
+                <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 3, background: "rgba(212,176,119,0.15)", color: "var(--c-accent)" }}>Showroom</span>
+              </div>
+            </div>
+          ) : (
+            <UserCard />
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav style={{ flex: 1, padding: "14px 8px 0" }}>
+          <NavSection label="Workspace"     items={WORKSPACE} pathname={pathname} hrefTransform={navHref} />
+          <NavSection label="Analyse"       items={ANALYSE}   pathname={pathname} hrefTransform={navHref} />
+          <NavSection label="Konfiguration" items={CONFIG}    pathname={pathname} hrefTransform={navHref} />
         </nav>
 
-        {/* Bottom of sidebar */}
-        <div style={{ padding: "10px 8px 20px", borderTop: "1px solid var(--border)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 6px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} className="pulse" />
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--green)" }}>Paul aktiv</span>
+        {/* Beta Modus toggle — hidden in showroom */}
+        {!showroom && <div style={{ padding: "0 8px 6px" }}>
+          <button
+            onClick={toggleBeta}
+            title={betaMode ? "Beta-Modus aktiv – Beispieldaten werden angezeigt" : "Beta-Modus deaktiviert – Echte Daten"}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 8,
+              padding: "8px 12px", borderRadius: 8, border: "none", cursor: "pointer",
+              fontFamily: "inherit", transition: "all 0.18s",
+              background: betaMode ? "rgba(212,176,119,0.13)" : "var(--c-bg-subtle)",
+              outline: betaMode ? "1px solid rgba(212,176,119,0.4)" : "1px solid var(--c-border)",
+            }}
+          >
+            <span style={{
+              width: 28, height: 16, borderRadius: 8, flexShrink: 0, position: "relative",
+              background: betaMode ? "var(--c-accent)" : "var(--c-bg-strong)",
+              transition: "background 0.2s",
+              display: "inline-block",
+            }}>
+              <span style={{
+                position: "absolute", top: 2, left: betaMode ? 14 : 2,
+                width: 12, height: 12, borderRadius: "50%",
+                background: betaMode ? "var(--c-accent-fg)" : "var(--c-fg-subtle)",
+                transition: "left 0.2s",
+              }} />
+            </span>
+            <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: betaMode ? "var(--c-accent)" : "var(--c-fg-muted)", textAlign: "left" }}>
+              Beta-Modus
+            </span>
+            {betaMode && (
+              <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 5px", borderRadius: 3, background: "rgba(212,176,119,0.2)", color: "var(--c-accent)", letterSpacing: 0.3 }}>
+                DEMO
+              </span>
+            )}
+          </button>
+        </div>}
+
+        {/* Paul status */}
+        <div style={{ padding: "0 8px 6px" }}>
+          <div style={{ background: "var(--c-bg-subtle)", border: "1px solid var(--c-border)", borderRadius: 8, padding: "10px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <PaulPulse />
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-fg)", flex: 1 }}>Paul · KI-Agent</span>
+              <span style={{ fontSize: 10, color: "var(--c-fg-subtle)" }}>Ø 18s</span>
             </div>
-            <ThemeButton />
-          </div>
-          <div style={{ marginTop: 10, fontSize: 11, color: "var(--text-muted)", padding: "0 6px" }}>
-            v2.0 · Salon OS
+            <div style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>47 Aktionen heute</div>
           </div>
         </div>
+
+        {/* Support button — hidden in showroom */}
+        {!showroom && <div style={{ padding: "0 8px 14px" }}>
+          <button
+            onClick={() => setShowSupport(true)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 8,
+              padding: "8px 12px", borderRadius: 8,
+              border: "1px solid var(--c-border)", background: "transparent",
+              color: "var(--c-fg-muted)", fontSize: 12, fontWeight: 500,
+              cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--c-bg-subtle)"; (e.currentTarget as HTMLElement).style.color = "var(--c-fg)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--c-fg-muted)"; }}
+          >
+            <HelpCircle size={14} />
+            <span>Support kontaktieren</span>
+          </button>
+        </div>}
       </aside>
 
-      {/* ── Main Content ── */}
-      <div style={{ flex: 1, minWidth: 0, paddingBottom: 72 }} className="md:pb-0">
+      {/* ══ Main area ════════════════════════════════════════ */}
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingBottom: 72 }} className="md:pb-0">
 
-        {/* Mobile Header */}
+        {/* Desktop topbar */}
+        <header
+          className="hidden md:flex"
+          style={{
+            alignItems: "center", gap: 16, height: 48, padding: "0 24px",
+            background: "var(--c-bg-elevated)", borderBottom: "1px solid var(--c-border)",
+            position: "sticky", top: 0, zIndex: 40,
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-fg)", lineHeight: 1.2 }}>{pageLabel}</div>
+            <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", lineHeight: 1.2, marginTop: 1 }}>{today}</div>
+          </div>
+
+          <button className="btn-ghost" style={{ width: 240, justifyContent: "space-between", color: "var(--c-fg-subtle)", fontSize: 12 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Search size={12} /> Suchen oder springen
+            </span>
+            <span style={{ fontSize: 11, color: "var(--c-fg-faint)" }}>⌘K</span>
+          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, color: "var(--c-fg-muted)", background: "var(--c-bg-subtle)", border: "1px solid var(--c-border)", padding: "0 8px", height: 26, borderRadius: 6 }}>
+              <PaulPulse />
+              <span>47 Live</span>
+            </div>
+            <ThemeToggle />
+          </div>
+        </header>
+
+        {/* Mobile header */}
         <header
           className="flex md:hidden"
           style={{
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "13px 16px",
-            background: "var(--surface)",
-            borderBottom: "1px solid var(--border)",
-            position: "sticky",
-            top: 0,
-            zIndex: 40,
+            alignItems: "center", justifyContent: "space-between",
+            padding: "12px 16px", background: "var(--c-bg-elevated)",
+            borderBottom: "1px solid var(--c-border)",
+            position: "sticky", top: 0, zIndex: 40,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 9,
-              background: "var(--accent)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Zap size={15} color="#0a0a18" strokeWidth={2.5} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 26, height: 26, borderRadius: 6, background: "var(--c-accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Zap size={13} color="var(--c-accent-fg)" strokeWidth={2.5} />
             </div>
-            <span style={{ fontWeight: 900, fontSize: 17, color: "var(--text)", letterSpacing: -0.3 }}>Cutz</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--green)", background: "var(--green-bg)", border: "1px solid var(--green-border)", padding: "2px 7px", borderRadius: 999 }}>
-              Paul aktiv
-            </span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--c-fg)", letterSpacing: -0.3 }}>Cutz</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "var(--c-fg-muted)", background: "var(--c-bg-subtle)", border: "1px solid var(--c-border)", padding: "2px 7px", borderRadius: 999 }}>
+              <PaulPulse /> Paul aktiv
+            </div>
           </div>
-          <ThemeButton />
+          <ThemeToggle />
         </header>
 
-        <main>{children}</main>
+        {/* Showroom banner */}
+        {showroom && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              padding: "8px 20px",
+              background: "linear-gradient(90deg, rgba(212,176,119,0.12), rgba(212,176,119,0.08))",
+              borderBottom: "1px solid rgba(212,176,119,0.25)",
+              fontSize: 12,
+            }}
+          >
+            <span style={{ fontSize: 14 }}>✂️</span>
+            <span style={{ fontWeight: 700, color: "var(--c-accent)" }}>Showroom-Demo</span>
+            <span style={{ color: "var(--c-fg-subtle)" }}>· Alle Daten sind Beispieldaten</span>
+            <span style={{ color: "var(--c-fg-faint)", marginLeft: 4 }}>|</span>
+            <a
+              href="mailto:ejs-solution@outlook.de?subject=Interesse%20an%20CUTZ%20Solution"
+              style={{ color: "var(--c-accent)", fontWeight: 700, textDecoration: "none", fontSize: 12 }}
+            >
+              Jetzt anfragen →
+            </a>
+          </motion.div>
+        )}
+        <main style={{ flex: 1 }}>{children}</main>
       </div>
 
-      {/* ── Mobile Bottom Nav ── */}
+      {/* ══ Mobile bottom nav ════════════════════════════════ */}
       <nav className="bottom-nav md:hidden">
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || (href !== "/" && pathname.startsWith(href));
+        {[...WORKSPACE, CONFIG[2]].map(({ href, label, icon: Icon, badge }) => {
+          const active = isActive(href, pathname);
           return (
             <Link key={href} href={href} className={`bottom-nav-item ${active ? "active" : ""}`}>
-              <motion.div
-                animate={{ scale: active ? 1.15 : 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 22 }}
-              >
-                <Icon size={20} />
-              </motion.div>
+              <div style={{ position: "relative" }}>
+                <Icon size={20} strokeWidth={active ? 2 : 1.5} />
+                {badge != null && badge > 0 && (
+                  <span style={{ position: "absolute", top: -4, right: -6, width: 14, height: 14, borderRadius: "50%", background: "var(--c-danger)", fontSize: 8, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {badge}
+                  </span>
+                )}
+              </div>
               <span>{label === "Übersicht" ? "Home" : label}</span>
             </Link>
           );
         })}
       </nav>
+
+      {/* Waitlist notification banner */}
+      <WaitlistBanner />
+
+      {/* Support modal */}
+      <AnimatePresence>
+        {showSupport && <SupportModal onClose={() => setShowSupport(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

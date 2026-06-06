@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Bell, CreditCard, Globe, Zap, MessageSquare,
-  Gift, Phone, Save, CheckCircle,
+  Gift, Phone, Save, CheckCircle, Calendar, Mail, Link2, Check,
 } from "lucide-react";
 import { aiSettings as defaults } from "@/lib/mock-data";
 
@@ -53,6 +53,14 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState(defaults);
   const [saved, setSaved] = useState(false);
   const [note, setNote] = useState(defaults.note);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleError, setGoogleError]         = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("google_connected") === "1") setGoogleConnected(true);
+    if (params.get("google_error")) setGoogleError(params.get("google_error"));
+  }, []);
 
   const toggle = (key: keyof typeof defaults) =>
     setSettings((p) => ({ ...p, [key]: !p[key] }));
@@ -161,6 +169,70 @@ export default function SettingsPage() {
             {saved ? <><CheckCircle size={14} /> Gespeichert!</> : <><Save size={14} /> Speichern</>}
           </motion.button>
         </div>
+      </motion.div>
+
+      {/* ── Google Integration ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08, ease: EASE }}
+        className="card"
+        style={{ padding: "18px 20px", marginBottom: 14 }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid var(--border)" }}>
+          <Link2 size={16} style={{ color: "var(--accent)" }} />
+          <span style={{ fontWeight: 800, fontSize: 15, color: "var(--text)" }}>Google Integrationen</span>
+          {googleConnected && (
+            <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "var(--green)" }}>
+              <Check size={12} /> Verbunden
+            </span>
+          )}
+        </div>
+
+        {googleError && (
+          <div style={{ marginBottom: 14, padding: "10px 12px", background: "var(--red-bg)", border: "1px solid var(--red-border)", borderRadius: 8, fontSize: 13, color: "var(--red)" }}>
+            Fehler: {googleError}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
+          {[
+            { icon: <Calendar size={15} />, label: "Google Kalender", desc: "Termine & Verfügbarkeit" },
+            { icon: <Mail size={15} />, label: "Gmail",           desc: "E-Mail-Buchungen lesen" },
+          ].map(({ icon, label, desc }) => (
+            <div key={label} style={{
+              flex: 1, minWidth: 160,
+              padding: "12px 14px",
+              background: googleConnected ? "rgba(34,197,94,0.06)" : "var(--surface-2)",
+              border: `1px solid ${googleConnected ? "var(--green-border)" : "var(--border)"}`,
+              borderRadius: 10,
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              <span style={{ color: googleConnected ? "var(--green)" : "var(--text-muted)" }}>{icon}</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{label}</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{desc}</div>
+              </div>
+              {googleConnected && <Check size={13} style={{ color: "var(--green)", marginLeft: "auto" }} />}
+            </div>
+          ))}
+        </div>
+
+        {googleConnected ? (
+          <p style={{ fontSize: 13, color: "var(--green)", fontWeight: 600 }}>
+            Google Kalender und Gmail sind verbunden. Deine Daten werden jetzt live geladen.
+          </p>
+        ) : (
+          <>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14 }}>
+              Verbinde deinen Google Account um echte Kalender-Termine und Gmail-Buchungen im Dashboard zu sehen.
+            </p>
+            <a href="/api/auth/google" className="btn-gold" style={{ display: "inline-flex", textDecoration: "none" }}>
+              <Link2 size={14} />
+              Mit Google verbinden
+            </a>
+          </>
+        )}
       </motion.div>
 
       {/* ── Sections ── */}
