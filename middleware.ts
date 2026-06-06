@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 
-export async function middleware(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Always public — no auth check
+  // Always public — skip auth
   if (
     pathname.startsWith("/demo") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/gcal") ||
+    pathname.startsWith("/api/") ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/public") ||
-    pathname.includes("favicon") ||
-    pathname.includes(".")          // static files
+    pathname.includes(".")
   ) {
     return NextResponse.next();
   }
 
-  // Require auth for everything else
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  if (!token) {
+  // Check session cookie (no secret needed — just presence check)
+  const hasSession =
+    req.cookies.has("next-auth.session-token") ||
+    req.cookies.has("__Secure-next-auth.session-token");
+
+  if (!hasSession) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -29,5 +28,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
