@@ -486,6 +486,17 @@ export default function LoginPage() {
             Salon anlegen
           </Link>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+          style={{ textAlign: "center", fontSize: 11, color: "var(--c-fg-faint)", marginTop: 16, display: "flex", gap: 12, justifyContent: "center" }}
+        >
+          <Link href="/impressum" style={{ color: "var(--c-fg-faint)", textDecoration: "none" }}>Impressum</Link>
+          <span>·</span>
+          <Link href="/datenschutz" style={{ color: "var(--c-fg-faint)", textDecoration: "none" }}>Datenschutz</Link>
+        </motion.div>
       </div>
 
       {/* ── Right: Brand panel (desktop only) ── */}

@@ -861,6 +861,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <span>Support kontaktieren</span>
           </button>
         </div>}
+
+        {/* Legal links */}
+        <div style={{ padding: "0 12px 12px", display: "flex", gap: 10, justifyContent: "center" }}>
+          <Link href="/impressum" style={{ fontSize: 10, color: "var(--c-fg-faint)", textDecoration: "none" }}>Impressum</Link>
+          <span style={{ fontSize: 10, color: "var(--c-fg-faint)" }}>·</span>
+          <Link href="/datenschutz" style={{ fontSize: 10, color: "var(--c-fg-faint)", textDecoration: "none" }}>Datenschutz</Link>
+        </div>
       </aside>
 
       {/* ══ Main area ════════════════════════════════════════ */}
