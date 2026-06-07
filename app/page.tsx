@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { AlertTriangle, X, RefreshCw, ChevronRight, Ban } from "lucide-react";
+import Link from "next/link";
 import { useBeta } from "@/lib/beta-context";
 import { todayAppointments } from "@/lib/mock-data";
 
@@ -352,37 +353,18 @@ export default function DashboardPage() {
       </div>
 
       {/* ── 3 numbers ── */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-        borderBottom: "1px solid var(--c-border)",
-      }}>
-        {[
-          { value: loading ? "–" : String(appts.length), label: "Termine heute" },
-          { value: loading ? "–" : `€ ${totalRevenue}`, label: "erwartet" },
-          { value: loading ? "–" : String(openDeposits), label: "offen" },
-        ].map(({ value, label }, i) => (
-          <div
-            key={label}
-            style={{
-              padding: "18px 16px",
-              borderRight: i < 2 ? "1px solid var(--c-border)" : "none",
-              textAlign: "center",
-            }}
-          >
-            <div style={{
-              fontSize: 28, fontWeight: 800, color: "var(--c-fg)",
-              fontFamily: "ui-monospace, monospace",
-              fontVariantNumeric: "tabular-nums",
-              letterSpacing: -1,
-              lineHeight: 1.1,
-            }}>
-              {value}
-            </div>
-            <div style={{ fontSize: 12, color: "var(--c-fg-subtle)", marginTop: 4, fontWeight: 400 }}>
-              {label}
-            </div>
-          </div>
-        ))}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--c-border)" }}>
+        {([{
+          value: loading ? "–" : String(appts.length), label: "Termine heute", href: "/kalender",
+        }, {
+          value: loading ? "–" : `€ ${totalRevenue}`, label: "erwartet", href: null,
+        }, {
+          value: loading ? "–" : String(openDeposits), label: "offen", href: null,
+        }] as { value: string; label: string; href: string | null }[]).map(({ value, label, href }, i) => {
+          const content = (<><div style={{ fontSize: 28, fontWeight: 800, color: "var(--c-fg)", fontFamily: "ui-monospace, monospace", fontVariantNumeric: "tabular-nums", letterSpacing: -1, lineHeight: 1.1 }}>{value}</div><div style={{ fontSize: 12, marginTop: 4, color: href ? "var(--c-accent)" : "var(--c-fg-subtle)", display: "flex", alignItems: "center", justifyContent: "center", gap: 2 }}>{label}{href && <ChevronRight size={11} />}</div></>);
+          const s: React.CSSProperties = { padding: "18px 8px", borderRight: i < 2 ? "1px solid var(--c-border)" : "none", textAlign: "center" };
+          return href ? <Link key={label} href={href} style={{ ...s, textDecoration: "none", display: "block" }}>{content}</Link> : <div key={label} style={s}>{content}</div>;
+        })}
       </div>
 
       {/* ── Alert row ── */}

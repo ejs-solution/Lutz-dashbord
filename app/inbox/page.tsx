@@ -157,9 +157,7 @@ function ChatView({ convo, onBack, onTogglePaul, replyText, setReplyText, onSend
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <span style={{ fontWeight: 800, fontSize: 15, color: "var(--text)" }}>{convo.customerName}</span>
-            <span style={{ fontSize: 14 }}>{convo.langFlag}</span>
-            {convo.isVIP && <span className="badge badge-gold" style={{ fontSize: 9 }}>VIP</span>}
-            {convo.isRegular && <span className="badge badge-gray" style={{ fontSize: 9 }}>Stammkunde</span>}
+            
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
             <span className={ch.class} style={{ display: "flex" }}>{ch.icon}</span>
@@ -374,8 +372,7 @@ export default function InboxPage() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <span style={{ fontWeight: 800, fontSize: 14, color: "var(--text)" }}>{c.customerName}</span>
-                        <span style={{ fontSize: 13 }}>{c.langFlag}</span>
-                        {c.isVIP && <span className="badge badge-gold" style={{ fontSize: 9, padding: "2px 5px" }}>VIP</span>}
+
                       </div>
                       <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{c.time}</span>
                     </div>

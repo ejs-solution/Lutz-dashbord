@@ -821,6 +821,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname      = usePathname();
   const pageLabel     = usePageLabel(pathname);
   const [showSupport, setShowSupport] = useState(false);
+  const [showDrawer,  setShowDrawer]  = useState(false);
   const { betaMode, toggleBeta } = useBeta();
   // Detect showroom from URL — ShowroomProvider lives below AppShell in the tree
   const showroom = pathname.startsWith("/demo");
@@ -997,7 +998,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             position: "sticky", top: 0, zIndex: 40,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Hamburger */}
+            <button
+              onClick={() => setShowDrawer(true)}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", flexDirection: "column", gap: 4 }}
+              aria-label="Menü"
+            >
+              <span style={{ display: "block", width: 20, height: 2, background: "var(--c-fg)", borderRadius: 1 }} />
+              <span style={{ display: "block", width: 14, height: 2, background: "var(--c-fg)", borderRadius: 1 }} />
+              <span style={{ display: "block", width: 20, height: 2, background: "var(--c-fg)", borderRadius: 1 }} />
+            </button>
             <div style={{ width: 26, height: 26, borderRadius: 6, background: "var(--c-accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Zap size={13} color="var(--c-accent-fg)" strokeWidth={2.5} />
             </div>
@@ -1008,6 +1019,83 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <MobileUserButton showroom={showroom} />
           </div>
         </header>
+
+        {/* ── Mobile Drawer ── */}
+        <AnimatePresence>
+          {showDrawer && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setShowDrawer(false)}
+                style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200 }}
+                className="md:hidden"
+              />
+              {/* Slide-in panel */}
+              <motion.div
+                initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+                transition={{ type: "spring", stiffness: 340, damping: 32 }}
+                style={{
+                  position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 201,
+                  width: 280, background: "var(--c-bg-elevated)",
+                  borderRight: "1px solid var(--c-border)",
+                  display: "flex", flexDirection: "column",
+                  overflowY: "auto",
+                }}
+                className="md:hidden"
+              >
+                {/* Drawer header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 12px", borderBottom: "1px solid var(--c-border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--c-accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Zap size={13} color="var(--c-accent-fg)" strokeWidth={2.5} />
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg-subtle)", textTransform: "uppercase", letterSpacing: 0.5 }}>Cutz Solution</span>
+                  </div>
+                  <button onClick={() => setShowDrawer(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+                    <X size={18} style={{ color: "var(--c-fg-subtle)" }} />
+                  </button>
+                </div>
+
+                {/* Drawer user */}
+                {showroom ? (
+                  <div style={{ padding: "10px 16px 8px", borderBottom: "1px solid var(--c-border)", display: "flex", alignItems: "center", gap: 9 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(212,176,119,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "var(--c-accent)" }}>DS</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>Demo Salon</div>
+                      <span style={{ fontSize: 10, fontWeight: 800, padding: "1px 5px", borderRadius: 3, background: "rgba(212,176,119,0.15)", color: "var(--c-accent)" }}>Showroom</span>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Nav sections */}
+                <nav style={{ flex: 1, padding: "14px 8px 0" }} onClick={() => setShowDrawer(false)}>
+                  <NavSection label="Workspace"     items={WORKSPACE} pathname={pathname} hrefTransform={navHref} />
+                  <NavSection label="Analyse"       items={ANALYSE}   pathname={pathname} hrefTransform={navHref} />
+                  <NavSection label="Konfiguration" items={CONFIG}    pathname={pathname} hrefTransform={navHref} />
+                </nav>
+
+                {/* Paul status */}
+                <div style={{ padding: "0 8px 8px" }}>
+                  <div style={{ background: "var(--c-bg-subtle)", border: "1px solid var(--c-border)", borderRadius: 8, padding: "10px 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                      <PaulPulse />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-fg)", flex: 1 }}>Paul · KI-Agent</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>47 Aktionen heute</div>
+                  </div>
+                </div>
+
+                {/* Legal */}
+                <div style={{ padding: "0 12px 20px", display: "flex", gap: 10 }}>
+                  <Link href="/impressum" onClick={() => setShowDrawer(false)} style={{ fontSize: 10, color: "var(--c-fg-faint)", textDecoration: "none" }}>Impressum</Link>
+                  <span style={{ fontSize: 10, color: "var(--c-fg-faint)" }}>·</span>
+                  <Link href="/datenschutz" onClick={() => setShowDrawer(false)} style={{ fontSize: 10, color: "var(--c-fg-faint)", textDecoration: "none" }}>Datenschutz</Link>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         <main style={{ flex: 1 }}>{children}</main>
       </div>
