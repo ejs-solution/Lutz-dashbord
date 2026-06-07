@@ -732,6 +732,90 @@ function WaitlistBanner() {
   );
 }
 
+/* ─── MobileUserButton ───────────────────────────────────── */
+function MobileUserButton({ showroom }: { showroom: boolean }) {
+  const { data: session } = useSession();
+  const [open, setOpen]   = useState(false);
+
+  const name     = showroom ? "Demo Salon" : (session?.user?.name ?? "Benutzer");
+  const email    = showroom ? "demo@cutzsolution.com" : (session?.user?.email ?? "");
+  const rawPlan  = showroom ? "pro" : ((session?.user as { plan?: string } | undefined)?.plan ?? "starter");
+  const plan     = PLAN_LABELS[rawPlan] ?? PLAN_LABELS.starter;
+  const initials = name.split(" ").map((n: string) => n[0] ?? "").join("").slice(0, 2).toUpperCase();
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+          background: showroom ? "rgba(212,176,119,0.2)" : "var(--c-accent)",
+          border: `1.5px solid ${showroom ? "rgba(212,176,119,0.5)" : "transparent"}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", fontSize: 11, fontWeight: 800,
+          color: "var(--c-accent-fg)",
+        }}
+      >
+        {initials}
+      </button>
+
+      {/* Bottom sheet */}
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200 }}
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 340, damping: 32 }}
+              style={{
+                position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 201,
+                background: "var(--c-bg-elevated)", borderRadius: "20px 20px 0 0",
+                border: "1px solid var(--c-border)", padding: "20px 20px 40px",
+              }}
+            >
+              {/* Handle */}
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--c-border)", margin: "0 auto 20px" }} />
+
+              {/* User info */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: showroom ? "rgba(212,176,119,0.2)" : "var(--c-accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "var(--c-accent-fg)", flexShrink: 0 }}>
+                  {initials}
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "var(--c-fg)" }}>{name}</div>
+                  <div style={{ fontSize: 12, color: "var(--c-fg-subtle)", marginTop: 2 }}>{email}</div>
+                  <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 4, color: plan.color, background: plan.bg, marginTop: 4, display: "inline-block" }}>
+                    <Crown size={9} style={{ display: "inline", marginRight: 3 }} />{plan.label} Plan
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Link href="/settings" onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, background: "var(--c-bg-subtle)", textDecoration: "none", color: "var(--c-fg)", fontSize: 14, fontWeight: 600 }}>
+                  <Settings size={16} style={{ color: "var(--c-fg-subtle)" }} /> Einstellungen
+                </Link>
+                {!showroom && (
+                  <button
+                    onClick={() => { setOpen(false); signOut({ callbackUrl: "/login" }); }}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 14, fontWeight: 600, fontFamily: "inherit", width: "100%", textAlign: "left", marginTop: 4 }}
+                  >
+                    <LogOut size={16} /> Abmelden
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 /* ─── AppShell ───────────────────────────────────────────── */
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname      = usePathname();
@@ -908,7 +992,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           className="flex md:hidden"
           style={{
             alignItems: "center", justifyContent: "space-between",
-            padding: "12px 16px", background: "var(--c-bg-elevated)",
+            padding: "10px 16px", background: "var(--c-bg-elevated)",
             borderBottom: "1px solid var(--c-border)",
             position: "sticky", top: 0, zIndex: 40,
           }}
@@ -918,11 +1002,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <Zap size={13} color="var(--c-accent-fg)" strokeWidth={2.5} />
             </div>
             <span style={{ fontWeight: 700, fontSize: 15, color: "var(--c-fg)", letterSpacing: -0.3 }}>Cutz</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "var(--c-fg-muted)", background: "var(--c-bg-subtle)", border: "1px solid var(--c-border)", padding: "2px 7px", borderRadius: 999 }}>
-              <PaulPulse /> Paul aktiv
-            </div>
           </div>
-          <ThemeToggle />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <ThemeToggle />
+            <MobileUserButton showroom={showroom} />
+          </div>
         </header>
 
         {/* Showroom banner */}

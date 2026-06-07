@@ -11,24 +11,14 @@ import { useBeta } from "@/lib/beta-context";
 
 /* ─── Types ──────────────────────────────────────────────── */
 type GmailMessage = {
-  id: string;
-  threadId: string;
-  from: string;
-  subject: string;
-  date: string;
-  snippet: string;
-  unread: boolean;
+  id: string; threadId: string; from: string;
+  subject: string; date: string; snippet: string; unread: boolean;
 };
-
 type Channel = "alle" | "gmail" | "whatsapp" | "instagram";
 
 /* ─── Constants ──────────────────────────────────────────── */
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
-
-const AVATAR_COLORS = [
-  "#D4B077", "#60a5fa", "#34d399", "#f472b6",
-  "#a78bfa", "#fb923c", "#22d3ee", "#4ade80",
-];
+const AVATAR_COLORS = ["#D4B077","#60a5fa","#34d399","#f472b6","#a78bfa","#fb923c","#22d3ee","#4ade80"];
 
 const channelMeta: Record<string, { icon: React.ReactNode; label: string; class: string }> = {
   whatsapp:  { icon: <MessageSquare size={14} />, label: "WhatsApp", class: "ch-whatsapp" },
@@ -36,7 +26,6 @@ const channelMeta: Record<string, { icon: React.ReactNode; label: string; class:
   email:     { icon: <Mail size={14} />,           label: "E-Mail",    class: "ch-email"     },
   voice:     { icon: <Phone size={14} />,          label: "Anruf",     class: "ch-voice"     },
 };
-
 const statusBadge: Record<string, { label: string; cls: string }> = {
   neu:           { label: "Neu",           cls: "badge-gold"  },
   buchung:       { label: "Buchung",       cls: "badge-green" },
@@ -47,97 +36,61 @@ const statusBadge: Record<string, { label: string; cls: string }> = {
 /* ─── Helpers ────────────────────────────────────────────── */
 function parseFrom(from: string) {
   const m = from.match(/^"?([^"<]+)"?\s*<(.+)>$/);
-  if (m) return { name: m[1].trim(), email: m[2].trim() };
-  return { name: from, email: from };
+  return m ? { name: m[1].trim(), email: m[2].trim() } : { name: from, email: from };
 }
-
-function initials(name: string) {
+function getInitials(name: string) {
   return name.split(/\s+/).map(p => p[0] ?? "").join("").slice(0, 2).toUpperCase() || "?";
 }
-
-function avatarColor(name: string) {
+function getColor(name: string) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
   return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
 }
-
-function formatDate(ts: string): string {
-  const d = new Date(parseInt(ts));
-  const diff = Date.now() - d.getTime();
-  if (diff < 86_400_000) return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
+function formatDate(ts: string) {
+  const d = new Date(parseInt(ts)), diff = Date.now() - d.getTime();
+  return diff < 86_400_000
+    ? d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+    : d.toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
 }
 
-/* ─── Avatar circle (shared) ─────────────────────────────── */
-function AvatarCircle({ name, size = 40, fontSize = 14, unread = 0 }: { name: string; size?: number; fontSize?: number; unread?: number }) {
-  const color = avatarColor(name);
+/* ─── Shared avatar ──────────────────────────────────────── */
+function Av({ name, size = 40, fs = 14, unread = 0 }: { name: string; size?: number; fs?: number; unread?: number }) {
+  const c = getColor(name);
   return (
     <div style={{ position: "relative", flexShrink: 0 }}>
-      <div style={{
-        width: size, height: size, borderRadius: "50%",
-        background: `${color}22`, border: `1.5px solid ${color}55`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize, fontWeight: 800, color, userSelect: "none",
-      }}>
-        {initials(name)}
+      <div style={{ width: size, height: size, borderRadius: "50%", background: `${c}22`, border: `1.5px solid ${c}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: fs, fontWeight: 800, color: c, userSelect: "none" }}>
+        {getInitials(name)}
       </div>
       {unread > 0 && (
-        <span style={{
-          position: "absolute", top: -2, right: -2,
-          background: "var(--red)", color: "#fff",
-          width: 16, height: 16, borderRadius: "50%",
-          fontSize: 9, fontWeight: 900,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>{unread > 9 ? "9+" : unread}</span>
+        <span style={{ position: "absolute", top: -2, right: -2, background: "var(--red)", color: "#fff", width: 16, height: 16, borderRadius: "50%", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {unread > 9 ? "9+" : unread}
+        </span>
       )}
     </div>
   );
 }
 
-/* ─── Gmail card (left panel) ────────────────────────────── */
-function GmailCard({ msg, selected, onClick, delay }: {
-  msg: GmailMessage; selected: boolean; onClick: () => void; delay: number;
-}) {
+/* ─── Gmail card ─────────────────────────────────────────── */
+function GmailCard({ msg, selected, onClick, delay }: { msg: GmailMessage; selected: boolean; onClick: () => void; delay: number }) {
   const { name } = parseFrom(msg.from);
   return (
     <motion.div
-      initial={{ opacity: 0, x: -16 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay, ease: EASE }}
+      initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, ease: EASE }}
       onClick={onClick}
-      style={{
-        padding: "14px 16px",
-        borderBottom: "1px solid var(--border)",
-        cursor: "pointer",
-        background: selected ? "var(--accent-glow)" : "transparent",
-        borderLeft: selected ? "2px solid var(--accent)" : "2px solid transparent",
-        transition: "background 0.15s",
-      }}
+      style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: selected ? "var(--accent-glow)" : "transparent", borderLeft: selected ? "2px solid var(--accent)" : "2px solid transparent", transition: "background 0.15s" }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
-        <AvatarCircle name={name} size={40} fontSize={14} unread={msg.unread ? 1 : 0} />
-
+        <Av name={name} size={40} fs={14} unread={msg.unread ? 1 : 0} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Name + time */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ fontWeight: msg.unread ? 800 : 600, fontSize: 14, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 150 }}>
-                {name}
-              </span>
-            </div>
+            <span style={{ fontWeight: msg.unread ? 800 : 600, fontSize: 14, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 150 }}>{name}</span>
             <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{formatDate(msg.date)}</span>
           </div>
-
-          {/* Channel badge */}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
             <span className="ch-email" style={{ display: "flex" }}><Mail size={12} /></span>
             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Gmail</span>
-            {msg.unread && (
-              <span className="badge badge-gold" style={{ fontSize: 9, padding: "2px 6px" }}>Neu</span>
-            )}
+            {msg.unread && <span className="badge badge-gold" style={{ fontSize: 9, padding: "2px 6px" }}>Neu</span>}
           </div>
-
-          {/* Subject (= last message) */}
           <div style={{ fontSize: 12, color: msg.unread ? "var(--text)" : "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: msg.unread ? 600 : 400 }}>
             {msg.subject || "(kein Betreff)"}
           </div>
@@ -147,90 +100,115 @@ function GmailCard({ msg, selected, onClick, delay }: {
   );
 }
 
-/* ─── Gmail detail (right panel) ────────────────────────── */
+/* ─── Gmail detail ───────────────────────────────────────── */
 function GmailDetail({ msg, onBack }: { msg: GmailMessage; onBack: () => void }) {
   const { name, email } = parseFrom(msg.from);
   const gmailUrl = `https://mail.google.com/mail/u/0/#inbox/${msg.threadId}`;
-
   return (
     <>
-      {/* Header — same style as chat header */}
-      <div style={{
-        padding: "14px 18px",
-        background: "var(--surface)",
-        borderBottom: "1px solid var(--border)",
-        display: "flex", alignItems: "center", gap: 12,
-      }}>
-        <button className="md:hidden btn-ghost" style={{ padding: "6px 8px", marginRight: -4 }} onClick={onBack}>
-          <ChevronLeft size={18} />
-        </button>
-
-        <AvatarCircle name={name} size={38} fontSize={13} />
-
+      <div style={{ padding: "14px 18px", background: "var(--surface)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
+        <button className="md:hidden btn-ghost" style={{ padding: "6px 8px", marginRight: -4 }} onClick={onBack}><ChevronLeft size={18} /></button>
+        <Av name={name} size={38} fs={13} />
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ fontWeight: 800, fontSize: 15, color: "var(--text)" }}>{name}</span>
-          </div>
+          <span style={{ fontWeight: 800, fontSize: 15, color: "var(--text)" }}>{name}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
             <span className="ch-email" style={{ display: "flex" }}><Mail size={12} /></span>
             <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Gmail · {email}</span>
           </div>
         </div>
-
-        <a
-          href={gmailUrl} target="_blank" rel="noopener noreferrer"
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 14px", borderRadius: 10,
-            background: "var(--accent)", color: "#0a0a18",
-            fontSize: 13, fontWeight: 700, textDecoration: "none",
-          }}
-        >
+        <a href={gmailUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, background: "var(--accent)", color: "#0a0a18", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
           <ExternalLink size={13} /> Gmail öffnen
         </a>
       </div>
-
-      {/* Messages area — email rendered as a "customer bubble" */}
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
-        {/* Subject line */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, ease: EASE }}
-          style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}
-        >
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>
-            {name} · {formatDate(msg.date)}
-          </div>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>{name} · {formatDate(msg.date)}</div>
           <div className="bubble-customer" style={{ maxWidth: "80%" }}>
             <div style={{ fontWeight: 700, marginBottom: 6, fontSize: 13 }}>{msg.subject || "(kein Betreff)"}</div>
-            <div style={{ fontSize: 13, lineHeight: 1.6, color: "inherit" }}>{msg.snippet}</div>
-          </div>
-          <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 3, paddingRight: 4 }}>
-            {formatDate(msg.date)}
+            <div style={{ fontSize: 13, lineHeight: 1.6 }}>{msg.snippet}</div>
           </div>
         </motion.div>
       </div>
-
-      {/* Reply bar — same style as paul-controlled bar */}
-      <div style={{
-        padding: "12px 18px",
-        background: "var(--surface)",
-        borderTop: "1px solid var(--border)",
-        display: "flex", gap: 10, alignItems: "center",
-      }}>
-        <div style={{
-          flex: 1, display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 14px", background: "var(--surface-2)",
-          borderRadius: 12, border: "1px solid var(--border)",
-        }}>
+      <div style={{ padding: "12px 18px", background: "var(--surface)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--surface-2)", borderRadius: 12, border: "1px solid var(--border)" }}>
           <Mail size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />
           <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
             Im Gmail antworten →{" "}
-            <a href={gmailUrl} target="_blank" rel="noopener noreferrer"
-               style={{ color: "var(--accent)", fontWeight: 700, textDecoration: "none" }}>
-              Antwort schreiben
-            </a>
+            <a href={gmailUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontWeight: 700, textDecoration: "none" }}>Antwort schreiben</a>
           </span>
         </div>
+      </div>
+    </>
+  );
+}
+
+/* ─── Chat view (right panel for conversations) ──────────── */
+function ChatView({ convo, onBack, onTogglePaul, replyText, setReplyText, onSend }: {
+  convo: Conversation; onBack: () => void;
+  onTogglePaul: () => void;
+  replyText: string; setReplyText: (v: string) => void; onSend: () => void;
+}) {
+  const ch = channelMeta[convo.channel];
+  return (
+    <>
+      <div style={{ padding: "14px 18px", background: "var(--surface)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
+        <button className="md:hidden btn-ghost" style={{ padding: "6px 8px", marginRight: -4 }} onClick={onBack}><ChevronLeft size={18} /></button>
+        <div className="avatar" style={{ width: 38, height: 38, fontSize: 13 }}>{convo.avatar}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <span style={{ fontWeight: 800, fontSize: 15, color: "var(--text)" }}>{convo.customerName}</span>
+            <span style={{ fontSize: 14 }}>{convo.langFlag}</span>
+            {convo.isVIP && <span className="badge badge-gold" style={{ fontSize: 9 }}>VIP</span>}
+            {convo.isRegular && <span className="badge badge-gray" style={{ fontSize: 9 }}>Stammkunde</span>}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+            <span className={ch.class} style={{ display: "flex" }}>{ch.icon}</span>
+            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{ch.label} · {convo.language}</span>
+            {convo.paulTyping && (
+              <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--accent)", fontWeight: 700 }}>
+                <Zap size={11} /> Paul tippt
+                <span style={{ display: "flex", gap: 3 }}><span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" /></span>
+              </span>
+            )}
+          </div>
+        </div>
+        <motion.button whileTap={{ scale: 0.94 }} onClick={onTogglePaul} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", background: convo.paulPaused ? "var(--green)" : "var(--accent)", color: "#0a0a18", transition: "background 0.2s" }}>
+          {convo.paulPaused ? <><Play size={13} /> Paul fortsetzen</> : <><UserCheck size={13} /> Take Over</>}
+        </motion.button>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+        {convo.messages.map((msg, i) => (
+          <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, ease: EASE }} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "customer" ? "flex-end" : "flex-start" }}>
+            {msg.role !== "customer" && (
+              <div style={{ fontSize: 11, fontWeight: 700, color: msg.role === "paul" ? "var(--accent)" : "var(--blue)", marginBottom: 4, marginLeft: 4, display: "flex", alignItems: "center", gap: 4 }}>
+                {msg.role === "paul" ? <><Zap size={10} /> Paul KI</> : <><UserCheck size={10} /> Du</>}
+              </div>
+            )}
+            <div className={msg.role === "customer" ? "bubble-customer" : "bubble-paul"}>{msg.text}</div>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 3, paddingLeft: 4, paddingRight: 4 }}>{msg.time}</div>
+          </motion.div>
+        ))}
+        {convo.paulTyping && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}><Zap size={10} /> Paul KI tippt</div>
+            <div className="bubble-paul" style={{ display: "inline-flex", gap: 4, alignItems: "center", padding: "12px 16px" }}>
+              <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
+            </div>
+          </motion.div>
+        )}
+      </div>
+      <div style={{ padding: "12px 18px", background: "var(--surface)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "flex-end" }}>
+        {convo.paulPaused ? (
+          <>
+            <textarea value={replyText} onChange={e => setReplyText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSend(); } }} placeholder={`Antworten als ${convo.channel}...`} rows={2} style={{ flex: 1, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px", fontSize: 14, color: "var(--text)", resize: "none", outline: "none", fontFamily: "inherit" }} />
+            <motion.button whileTap={{ scale: 0.92 }} onClick={onSend} className="btn-gold" style={{ padding: "10px 14px", borderRadius: 10 }}><Send size={16} /></motion.button>
+          </>
+        ) : (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", background: "var(--surface-2)", borderRadius: 12, border: "1px solid var(--border)" }}>
+            <Zap size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Paul beantwortet automatisch. <strong style={{ color: "var(--accent)" }}>Take Over</strong> zum selbst schreiben.</span>
+          </div>
+        )}
       </div>
     </>
   );
@@ -239,20 +217,26 @@ function GmailDetail({ msg, onBack }: { msg: GmailMessage; onBack: () => void })
 /* ─── Page ───────────────────────────────────────────────── */
 export default function InboxPage() {
   const { betaMode } = useBeta();
-  const [convos, setConvos]         = useState<Conversation[]>(conversations);
-  const [selected, setSelected]     = useState<Conversation | null>(convos[0]);
-  const [replyText, setReplyText]   = useState("");
-  const [showMobile, setShowMobile] = useState(false);
-  const [activeChannel, setActiveChannel] = useState<Channel>(() => betaMode ? "alle" : "gmail");
+  const [convos, setConvos]           = useState<Conversation[]>(conversations);
+  const [selectedConvo, setSelectedConvo] = useState<Conversation | null>(null);
+  const [replyText, setReplyText]     = useState("");
+  const [showMobile, setShowMobile]   = useState(false);
+  const [activeChannel, setActiveChannel] = useState<Channel>("gmail");
 
   const [gmailMessages, setGmailMessages] = useState<GmailMessage[]>([]);
   const [gmailLoading, setGmailLoading]   = useState(false);
   const [gmailError, setGmailError]       = useState<string | null>(null);
   const [selectedMail, setSelectedMail]   = useState<GmailMessage | null>(null);
 
+  // Switch to demo channel when betaMode becomes active
+  useEffect(() => {
+    if (betaMode) setActiveChannel("alle");
+    else          setActiveChannel("gmail");
+  }, [betaMode]);
+
   const loadGmail = () => {
-    setGmailLoading(true);
-    setGmailError(null);
+    if (betaMode) return; // Never load real data in demo/beta mode
+    setGmailLoading(true); setGmailError(null);
     fetch("/api/gmail")
       .then(r => r.json())
       .then(d => {
@@ -265,29 +249,42 @@ export default function InboxPage() {
   };
 
   useEffect(() => {
+    if (betaMode) return; // No real data in demo mode
     if (activeChannel === "gmail" && gmailMessages.length === 0 && !gmailError) loadGmail();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeChannel]);
+  }, [activeChannel, betaMode]);
 
   const togglePaul = (id: string) => {
     setConvos(prev => prev.map(c => c.id === id ? { ...c, paulPaused: !c.paulPaused } : c));
-    if (selected?.id === id) setSelected(s => s ? { ...s, paulPaused: !s.paulPaused } : s);
+    setSelectedConvo(s => s?.id === id ? { ...s, paulPaused: !s.paulPaused } : s);
   };
 
   const sendReply = () => {
-    if (!replyText.trim() || !selected) return;
+    if (!replyText.trim() || !selectedConvo) return;
     const msg = { id: `m${Date.now()}`, role: "human" as const, text: replyText, time: new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) };
-    const updated = convos.map(c => c.id === selected.id ? { ...c, messages: [...c.messages, msg], lastMessage: replyText, unread: 0 } : c);
+    const updated = convos.map(c => c.id === selectedConvo.id ? { ...c, messages: [...c.messages, msg], lastMessage: replyText, unread: 0 } : c);
     setConvos(updated);
-    setSelected(updated.find(c => c.id === selected.id) ?? null);
+    setSelectedConvo(updated.find(c => c.id === selectedConvo.id) ?? null);
     setReplyText("");
   };
 
-  /* ── Tab configs ── */
+  const selectConvo = (c: Conversation) => {
+    setSelectedConvo(c); setShowMobile(true);
+    setConvos(prev => prev.map(cv => cv.id === c.id ? { ...cv, unread: 0 } : cv));
+  };
+
+  // Conversations filtered by channel
+  const filteredConvos = activeChannel === "alle"
+    ? convos
+    : convos.filter(c => c.channel === activeChannel);
+
+  // Tabs config
   const tabs = betaMode
     ? [
-        { key: "alle" as Channel,   label: "Alle Kanäle", icon: <MessageSquare size={13} />, soon: false },
-        { key: "gmail" as Channel,  label: "Gmail",        icon: <Mail size={13} />,          soon: false },
+        { key: "alle" as Channel,      label: "Alle",      icon: <MessageSquare size={13} />, soon: false },
+        { key: "whatsapp" as Channel,  label: "WhatsApp",  icon: <MessageSquare size={13} />, soon: false },
+        { key: "instagram" as Channel, label: "Instagram", icon: <AtSign size={13} />,        soon: false },
+        { key: "gmail" as Channel,     label: "Gmail",     icon: <Mail size={13} />,          soon: false },
       ]
     : [
         { key: "gmail" as Channel,     label: "Gmail",     icon: <Mail size={13} />,          soon: false },
@@ -299,28 +296,28 @@ export default function InboxPage() {
     ? convos.filter(c => c.unread > 0).length
     : gmailMessages.filter(m => m.unread).length;
 
+  const showConvos = betaMode && activeChannel !== "gmail";
+  const showGmail  = activeChannel === "gmail" && !betaMode;
+  const showGmailBeta = betaMode && activeChannel === "gmail";
+
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0", height: "calc(100vh - 52px)" }}
-         className="md:h-[calc(100vh-0px)]">
+    <div style={{ maxWidth: 1000, margin: "0 auto", padding: 0, height: "calc(100vh - 52px)" }} className="md:h-[calc(100vh-0px)]">
 
       {/* ── Desktop header ── */}
-      <div style={{ padding: "16px 20px 0", borderBottom: "1px solid var(--border)", background: "var(--surface)", display: "none" }}
-           className="md:flex md:flex-col">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginBottom: 12 }}>
+      <div style={{ padding: "16px 20px 0", borderBottom: "1px solid var(--border)", background: "var(--surface)", display: "none" }} className="md:flex md:flex-col">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 900, color: "var(--text)", letterSpacing: -0.3 }}>Live-Inbox</h1>
             <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
               {unreadCount > 0 ? `${unreadCount} ungelesen · ` : ""}
-              {betaMode && activeChannel === "alle" ? "Paul überwacht alle Kanäle" : "Gmail"}
+              {betaMode ? "Demo-Daten" : "Gmail"}
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {(activeChannel === "gmail" || !betaMode) && (
-              <button className="btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }} onClick={loadGmail}>
-                <RefreshCw size={13} />
-              </button>
+            {!betaMode && (
+              <button className="btn-ghost" style={{ padding: "6px 10px", fontSize: 12 }} onClick={loadGmail}><RefreshCw size={13} /></button>
             )}
-            {betaMode && activeChannel === "alle" && (
+            {betaMode && (
               <div className="paul-active">
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} className="pulse" />
                 Paul aktiv · {convos.filter(c => !c.paulPaused).length} Chats
@@ -328,28 +325,11 @@ export default function InboxPage() {
             )}
           </div>
         </div>
-
-        {/* Tabs */}
         <div style={{ display: "flex", gap: 0 }}>
           {tabs.map(({ key, label, icon, soon }) => (
-            <button
-              key={key}
-              onClick={() => !soon && setActiveChannel(key)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 16px", fontSize: 13, fontWeight: 700,
-                border: "none", cursor: soon ? "default" : "pointer", background: "transparent",
-                color: activeChannel === key ? "var(--text)" : "var(--text-muted)",
-                borderBottom: activeChannel === key ? "2px solid var(--accent)" : "2px solid transparent",
-                transition: "all 0.15s", opacity: soon ? 0.5 : 1,
-              }}
-            >
+            <button key={key} onClick={() => !soon && setActiveChannel(key)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: 13, fontWeight: 700, border: "none", cursor: soon ? "default" : "pointer", background: "transparent", color: activeChannel === key ? "var(--text)" : "var(--text-muted)", borderBottom: activeChannel === key ? "2px solid var(--accent)" : "2px solid transparent", transition: "all 0.15s", opacity: soon ? 0.5 : 1 }}>
               {icon} {label}
-              {soon && (
-                <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 3, background: "var(--c-bg-strong)", color: "var(--text-muted)" }}>
-                  bald
-                </span>
-              )}
+              {soon && <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 5px", borderRadius: 3, background: "var(--c-bg-strong)", color: "var(--text-muted)" }}>bald</span>}
             </button>
           ))}
         </div>
@@ -358,112 +338,37 @@ export default function InboxPage() {
       {/* ── Split layout ── */}
       <div style={{ display: "flex", height: "calc(100% - 97px)", overflow: "hidden" }}>
 
-        {/* ── LEFT panel ── */}
-        <div
-          className={`${showMobile ? "hidden" : "flex"} md:flex`}
-          style={{
-            width: "100%", maxWidth: 340, flexShrink: 0,
-            flexDirection: "column",
-            borderRight: "1px solid var(--border)",
-            overflowY: "auto",
-            background: "var(--surface)",
-          }}
-        >
+        {/* ── LEFT ── */}
+        <div className={`${showMobile ? "hidden" : "flex"} md:flex`} style={{ width: "100%", maxWidth: 340, flexShrink: 0, flexDirection: "column", borderRight: "1px solid var(--border)", overflowY: "auto", background: "var(--surface)" }}>
+
           {/* Mobile header */}
           <div className="flex md:hidden" style={{ padding: "16px 16px 8px", borderBottom: "1px solid var(--border)", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <h1 style={{ fontSize: 20, fontWeight: 900, color: "var(--text)" }}>Live-Inbox</h1>
-                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  {betaMode && activeChannel === "alle" ? "Paul überwacht alle Kanäle" : "Gmail"}
-                </p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>{betaMode ? "Demo-Daten" : "Gmail"}</p>
               </div>
-              {(activeChannel === "gmail" || !betaMode) && (
-                <button className="btn-ghost" style={{ padding: "5px 8px" }} onClick={loadGmail}>
-                  <RefreshCw size={13} />
-                </button>
-              )}
+              {!betaMode && <button className="btn-ghost" style={{ padding: "5px 8px" }} onClick={loadGmail}><RefreshCw size={13} /></button>}
             </div>
-            <div style={{ display: "flex", gap: 0 }}>
+            <div style={{ display: "flex", gap: 0, overflowX: "auto" }}>
               {tabs.map(({ key, label, icon, soon }) => (
-                <button
-                  key={key}
-                  onClick={() => !soon && setActiveChannel(key)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    padding: "6px 12px", fontSize: 12, fontWeight: 700,
-                    border: "none", cursor: soon ? "default" : "pointer", background: "transparent",
-                    color: activeChannel === key ? "var(--text)" : "var(--text-muted)",
-                    borderBottom: activeChannel === key ? "2px solid var(--accent)" : "2px solid transparent",
-                    opacity: soon ? 0.5 : 1,
-                  }}
-                >
+                <button key={key} onClick={() => !soon && setActiveChannel(key)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", fontSize: 12, fontWeight: 700, border: "none", cursor: soon ? "default" : "pointer", background: "transparent", color: activeChannel === key ? "var(--text)" : "var(--text-muted)", borderBottom: activeChannel === key ? "2px solid var(--accent)" : "2px solid transparent", opacity: soon ? 0.5 : 1, whiteSpace: "nowrap", flexShrink: 0 }}>
                   {icon} {label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* ── Gmail list ── */}
-          {activeChannel === "gmail" && (
-            gmailLoading ? (
-              <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                {[1,2,3,4,5].map(n => (
-                  <div key={n} className="skeleton" style={{ height: 72, borderRadius: 10 }} />
-                ))}
-              </div>
-            ) : gmailError === "not_connected" ? (
-              <div style={{ padding: 24, textAlign: "center" }}>
-                <Mail size={28} style={{ color: "var(--text-muted)", margin: "0 auto 10px" }} />
-                <p style={{ fontWeight: 700, color: "var(--text)", marginBottom: 6, fontSize: 14 }}>Gmail nicht verbunden</p>
-                <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
-                  Verbinde deinen Google Account in den Integrationen.
-                </p>
-                <a href="/integrations" className="btn-gold" style={{ display: "inline-flex", fontSize: 13 }}>Integrationen</a>
-              </div>
-            ) : gmailError ? (
-              <div style={{ padding: 16, fontSize: 12, color: "var(--red)" }}>Fehler: {gmailError}</div>
-            ) : gmailMessages.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>
-                Keine E-Mails gefunden.
-              </div>
-            ) : (
-              gmailMessages.map((msg, i) => (
-                <GmailCard
-                  key={msg.id} msg={msg} delay={i * 0.04}
-                  selected={selectedMail?.id === msg.id}
-                  onClick={() => { setSelectedMail(msg); setShowMobile(true); }}
-                />
-              ))
-            )
-          )}
-
-          {/* ── Beta: conversations list (Alle) ── */}
-          {betaMode && activeChannel === "alle" && convos.map((c, i) => {
+          {/* Beta: conversation list (alle / whatsapp / instagram) */}
+          {showConvos && filteredConvos.map((c, i) => {
             const ch = channelMeta[c.channel];
-            const isSelected = selected?.id === c.id;
+            const isSel = selectedConvo?.id === c.id;
             return (
-              <motion.div
-                key={c.id}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06, ease: EASE }}
-                onClick={() => { setSelected(c); setShowMobile(true); setConvos(p => p.map(cv => cv.id === c.id ? { ...cv, unread: 0 } : cv)); }}
-                style={{
-                  padding: "14px 16px",
-                  borderBottom: "1px solid var(--border)",
-                  cursor: "pointer",
-                  background: isSelected ? "var(--accent-glow)" : "transparent",
-                  borderLeft: isSelected ? "2px solid var(--accent)" : "2px solid transparent",
-                  transition: "background 0.15s",
-                }}
-              >
+              <motion.div key={c.id} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05, ease: EASE }} onClick={() => selectConvo(c)} style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: isSel ? "var(--accent-glow)" : "transparent", borderLeft: isSel ? "2px solid var(--accent)" : "2px solid transparent", transition: "background 0.15s" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
                   <div style={{ position: "relative" }}>
                     <div className="avatar" style={{ width: 40, height: 40, fontSize: 14 }}>{c.avatar}</div>
-                    {c.unread > 0 && (
-                      <span style={{ position: "absolute", top: -2, right: -2, background: "var(--red)", color: "white", width: 16, height: 16, borderRadius: "50%", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>{c.unread}</span>
-                    )}
+                    {c.unread > 0 && <span style={{ position: "absolute", top: -2, right: -2, background: "var(--red)", color: "white", width: 16, height: 16, borderRadius: "50%", fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>{c.unread}</span>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
@@ -471,7 +376,6 @@ export default function InboxPage() {
                         <span style={{ fontWeight: 800, fontSize: 14, color: "var(--text)" }}>{c.customerName}</span>
                         <span style={{ fontSize: 13 }}>{c.langFlag}</span>
                         {c.isVIP && <span className="badge badge-gold" style={{ fontSize: 9, padding: "2px 5px" }}>VIP</span>}
-                        {c.isRegular && <span className="badge badge-gray" style={{ fontSize: 9, padding: "2px 5px" }}>Stamm</span>}
                       </div>
                       <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{c.time}</span>
                     </div>
@@ -481,151 +385,60 @@ export default function InboxPage() {
                       <span className={`badge ${statusBadge[c.status].cls}`} style={{ fontSize: 9, padding: "2px 6px" }}>{statusBadge[c.status].label}</span>
                     </div>
                     <div style={{ fontSize: 12, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {c.paulTyping ? (
-                        <span style={{ color: "var(--accent)", fontStyle: "italic", display: "flex", alignItems: "center", gap: 6 }}>
-                          <Zap size={11} /> Paul tippt...
-                        </span>
-                      ) : c.lastMessage}
+                      {c.paulTyping ? <span style={{ color: "var(--accent)", fontStyle: "italic", display: "flex", alignItems: "center", gap: 6 }}><Zap size={11} /> Paul tippt...</span> : c.lastMessage}
                     </div>
-                    {c.paulPaused && (
-                      <div style={{ marginTop: 4 }}>
-                        <span className="paul-paused" style={{ fontSize: 9, padding: "2px 6px" }}>⏸ Du hast übernommen</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </motion.div>
             );
           })}
 
-          {/* Beta: Gmail in Alle-tab also works */}
-          {betaMode && activeChannel === "gmail" && (
+          {/* Live: Gmail list */}
+          {(showGmail || showGmailBeta) && (
             gmailLoading ? (
               <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                {[1,2,3].map(n => <div key={n} className="skeleton" style={{ height: 72, borderRadius: 10 }} />)}
+                {[1,2,3,4,5].map(n => <div key={n} className="skeleton" style={{ height: 72, borderRadius: 10 }} />)}
               </div>
-            ) : gmailMessages.map((msg, i) => (
-              <GmailCard key={msg.id} msg={msg} delay={i * 0.04} selected={selectedMail?.id === msg.id} onClick={() => { setSelectedMail(msg); setShowMobile(true); }} />
-            ))
+            ) : gmailError === "not_connected" ? (
+              <div style={{ padding: 24, textAlign: "center" }}>
+                <Mail size={28} style={{ color: "var(--text-muted)", margin: "0 auto 10px" }} />
+                <p style={{ fontWeight: 700, color: "var(--text)", marginBottom: 6, fontSize: 14 }}>Gmail nicht verbunden</p>
+                <a href="/integrations" className="btn-gold" style={{ display: "inline-flex", fontSize: 13 }}>Integrationen</a>
+              </div>
+            ) : gmailError ? (
+              <div style={{ padding: 16, fontSize: 12, color: "var(--red)" }}>Fehler: {gmailError}</div>
+            ) : gmailMessages.length === 0 ? (
+              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Keine E-Mails gefunden.</div>
+            ) : (
+              gmailMessages.map((msg, i) => (
+                <GmailCard key={msg.id} msg={msg} delay={i * 0.04} selected={selectedMail?.id === msg.id} onClick={() => { setSelectedMail(msg); setShowMobile(true); }} />
+              ))
+            )
           )}
         </div>
 
-        {/* ── RIGHT panel ── */}
-        <div
-          className={`${showMobile ? "flex" : "hidden"} md:flex`}
-          style={{ flex: 1, flexDirection: "column", overflow: "hidden", background: "var(--bg-2)" }}
-        >
+        {/* ── RIGHT ── */}
+        <div className={`${showMobile ? "flex" : "hidden"} md:flex`} style={{ flex: 1, flexDirection: "column", overflow: "hidden", background: "var(--bg-2)" }}>
+
+          {/* Conversation detail */}
+          {showConvos && selectedConvo ? (
+            <ChatView convo={selectedConvo} onBack={() => setShowMobile(false)} onTogglePaul={() => togglePaul(selectedConvo.id)} replyText={replyText} setReplyText={setReplyText} onSend={sendReply} />
+          ) : showConvos && !selectedConvo ? (
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
+              <MessageSquare size={40} style={{ color: "var(--text-muted)" }} />
+              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Gespräch auswählen</p>
+            </div>
+          ) : null}
+
           {/* Gmail detail */}
-          {activeChannel === "gmail" && selectedMail ? (
+          {(showGmail || showGmailBeta) && selectedMail ? (
             <GmailDetail msg={selectedMail} onBack={() => setShowMobile(false)} />
-          ) : activeChannel === "gmail" && !selectedMail ? (
+          ) : (showGmail || showGmailBeta) && !selectedMail ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
               <Mail size={40} style={{ color: "var(--text-muted)" }} />
               <p style={{ color: "var(--text-muted)", fontSize: 14 }}>E-Mail auswählen</p>
             </div>
           ) : null}
-
-          {/* Beta: Gmail in "alle" tab */}
-          {betaMode && activeChannel === "gmail" && selectedMail && (
-            <GmailDetail msg={selectedMail} onBack={() => setShowMobile(false)} />
-          )}
-
-          {/* Beta: Chat view for Alle */}
-          {betaMode && activeChannel === "alle" && (selected ? (
-            <>
-              {/* Chat header */}
-              <div style={{ padding: "14px 18px", background: "var(--surface)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
-                <button className="md:hidden btn-ghost" style={{ padding: "6px 8px", marginRight: -4 }} onClick={() => setShowMobile(false)}>
-                  <ChevronLeft size={18} />
-                </button>
-                <div className="avatar" style={{ width: 38, height: 38, fontSize: 13 }}>{selected.avatar}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                    <span style={{ fontWeight: 800, fontSize: 15, color: "var(--text)" }}>{selected.customerName}</span>
-                    <span style={{ fontSize: 14 }}>{selected.langFlag}</span>
-                    {selected.isVIP && <span className="badge badge-gold" style={{ fontSize: 9 }}>VIP</span>}
-                    {selected.isRegular && <span className="badge badge-gray" style={{ fontSize: 9 }}>Stammkunde</span>}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
-                    <span className={channelMeta[selected.channel].class} style={{ display: "flex" }}>
-                      {channelMeta[selected.channel].icon}
-                    </span>
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{channelMeta[selected.channel].label} · {selected.language}</span>
-                    {selected.paulTyping && (
-                      <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--accent)", fontWeight: 700 }}>
-                        <Zap size={11} /> Paul tippt
-                        <span style={{ display: "flex", gap: 3, alignItems: "center" }}>
-                          <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={() => togglePaul(selected.id)}
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", background: selected.paulPaused ? "var(--green)" : "var(--accent)", color: "#0a0a18", boxShadow: selected.paulPaused ? "none" : "var(--shadow-accent)", transition: "background 0.2s" }}
-                >
-                  {selected.paulPaused ? <><Play size={13} /> Paul fortsetzen</> : <><UserCheck size={13} /> Take Over</>}
-                </motion.button>
-              </div>
-
-              {/* Messages */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "20px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
-                {selected.messages.map((msg, i) => (
-                  <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, ease: EASE }} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "customer" ? "flex-end" : "flex-start" }}>
-                    {msg.role !== "customer" && (
-                      <div style={{ fontSize: 11, fontWeight: 700, color: msg.role === "paul" ? "var(--accent)" : "var(--blue)", marginBottom: 4, marginLeft: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                        {msg.role === "paul" ? <><Zap size={10} /> Paul KI</> : <><UserCheck size={10} /> Du</>}
-                      </div>
-                    )}
-                    <div className={msg.role === "customer" ? "bubble-customer" : "bubble-paul"}>{msg.text}</div>
-                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 3, paddingLeft: 4, paddingRight: 4 }}>{msg.time}</div>
-                  </motion.div>
-                ))}
-                {selected.paulTyping && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                      <Zap size={10} /> Paul KI tippt
-                    </div>
-                    <div className="bubble-paul" style={{ display: "inline-flex", gap: 4, alignItems: "center", padding: "12px 16px" }}>
-                      <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Reply bar */}
-              <div style={{ padding: "12px 18px", background: "var(--surface)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "flex-end" }}>
-                {selected.paulPaused ? (
-                  <>
-                    <textarea
-                      value={replyText} onChange={e => setReplyText(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
-                      placeholder={`Antworten als ${selected.channel === "whatsapp" ? "WhatsApp" : selected.channel}...`}
-                      rows={2}
-                      style={{ flex: 1, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px", fontSize: 14, color: "var(--text)", resize: "none", outline: "none", fontFamily: "inherit" }}
-                    />
-                    <motion.button whileTap={{ scale: 0.92 }} onClick={sendReply} className="btn-gold" style={{ padding: "10px 14px", borderRadius: 10 }}>
-                      <Send size={16} />
-                    </motion.button>
-                  </>
-                ) : (
-                  <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", background: "var(--surface-2)", borderRadius: 12, border: "1px solid var(--border)" }}>
-                    <Zap size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                      Paul beantwortet diesen Chat automatisch. Klicke <strong style={{ color: "var(--accent)" }}>Take Over</strong>, um selbst zu schreiben.
-                    </span>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
-              <MessageSquare size={40} style={{ color: "var(--text-muted)" }} />
-              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Wähle ein Gespräch aus</p>
-            </div>
-          ))}
         </div>
       </div>
     </div>
