@@ -1039,9 +1039,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* ══ Mobile bottom nav ════════════════════════════════ */}
       <nav className="bottom-nav md:hidden">
         {[...WORKSPACE, CONFIG[2]].map(({ href, label, icon: Icon, badge }) => {
-          const active = isActive(href, pathname);
+          const resolvedHref = navHref(href);
+          const active = isActive(resolvedHref, pathname);
           return (
-            <Link key={href} href={href} className={`bottom-nav-item ${active ? "active" : ""}`}>
+            <Link key={resolvedHref} href={resolvedHref} className={`bottom-nav-item ${active ? "active" : ""}`}>
               <div style={{ position: "relative" }}>
                 <Icon size={20} strokeWidth={active ? 2 : 1.5} />
                 {badge != null && badge > 0 && (
