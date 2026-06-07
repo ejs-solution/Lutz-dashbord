@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBeta } from "@/lib/beta-context";
+import { customers } from "@/lib/mock-data";
 import {
   Search, ChevronRight, X, Phone,
   MessageSquare, Clock, Mail, Scissors,
@@ -203,10 +205,28 @@ function LeadSheet({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   );
 }
 
+/* ─── Mock leads (Demo-Modus) ────────────────────────────── */
+const MOCK_LEADS: Lead[] = customers.map((c, i) => ({
+  id: c.id,
+  fields: {
+    Name:          c.name,
+    Email:         c.email,
+    Status:        c.isVIP ? "Bestätigt" : i % 3 === 0 ? "Storniert" : "Neu",
+    Dienstleistung: c.preferredService,
+    Preis_Min_EUR: c.totalVisits > 0 ? Math.round(c.totalRevenue / c.totalVisits) : 0,
+    Preis_Max_EUR: c.totalVisits > 0 ? Math.round(c.totalRevenue / c.totalVisits * 1.2) : 0,
+    Dauer_Min:     60,
+    Erstellt_Am:   new Date(Date.now() - i * 3 * 24 * 3600 * 1000).toISOString(),
+    "Kundenwunsch / Notizen": c.followUpSuggestion,
+    Komplexitaet:  c.isVIP ? "Hoch" : "Mittel",
+  } as LeadFields,
+}));
+
 /* ─── Page ───────────────────────────────────────────────── */
 type StatusFilter = "alle" | "Neu" | "Bestätigt" | "Storniert";
 
 export default function CRMPage() {
+  const { betaMode }            = useBeta();
   const [leads, setLeads]       = useState<Lead[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
@@ -215,6 +235,7 @@ export default function CRMPage() {
   const [selected, setSelected] = useState<Lead | null>(null);
 
   const fetchLeads = async () => {
+    if (betaMode) { setLeads(MOCK_LEADS); setLoading(false); return; }
     setLoading(true);
     setError(null);
     try {
@@ -232,7 +253,7 @@ export default function CRMPage() {
     }
   };
 
-  useEffect(() => { fetchLeads(); }, []);
+  useEffect(() => { fetchLeads(); }, [betaMode]); // re-run when mode switches
 
   const filtered = leads.filter((l) => {
     const f = l.fields;
