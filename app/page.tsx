@@ -339,38 +339,13 @@ export default function DashboardPage() {
   }, [sortedAppts, betaMode]);
 
   return (
-    <div
-      style={{
-        maxWidth: 680, margin: "0 auto",
-        display: "flex", flexDirection: "column",
-        height: "calc(100dvh - 48px)",
-        overflowY: "auto",
-      }}
-      ref={listRef}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
-      {/* Pull-to-refresh indicator */}
-      <AnimatePresence>
-        {refreshing && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 36, opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: "var(--c-bg-subtle)",
-            }}
-          >
-            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}>
-              <RefreshCw size={15} style={{ color: "var(--c-fg-subtle)" }} />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100dvh - 48px)", overflow: "hidden" }}>
+
+      {/* ══ FIXED HEADER (never scrolls) ══ */}
+      <div style={{ flexShrink: 0 }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid var(--c-border)" }}>
+      <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid var(--c-border)" }}>
         <div style={{ fontSize: 13, color: "var(--c-fg-subtle)", fontWeight: 400 }}>
           {fmtDate(now)}
         </div>
@@ -465,9 +440,25 @@ export default function DashboardPage() {
           </button>
         ))}
       </div>
+      </div>{/* end fixed header */}
 
-      {/* ── Appointments list ── */}
-      <div style={{ flex: 1 }}>
+      {/* ══ SCROLLABLE LIST ══ */}
+      <div
+        ref={listRef}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        style={{ flex: 1, overflowY: "auto", minHeight: 0 }}
+      >
+        {/* Pull-to-refresh indicator */}
+        <AnimatePresence>
+          {refreshing && (
+            <motion.div initial={{ height: 0 }} animate={{ height: 36 }} exit={{ height: 0 }} style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "var(--c-bg-subtle)", overflow: "hidden" }}>
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}>
+                <RefreshCw size={14} style={{ color: "var(--c-fg-subtle)" }} />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Loading skeletons */}
         {loading && Array.from({ length: 4 }).map((_, i) => (
