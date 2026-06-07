@@ -174,25 +174,25 @@ function ApptRow({
           minHeight: 64, padding: "0 16px",
           background: "var(--c-bg-elevated)",
           cursor: "pointer",
-          opacity: isPast ? 0.45 : 1,
           borderLeft: isCurrent ? "3px solid var(--c-accent)" : "3px solid transparent",
         }}
         onClick={onClick}
         whileTap={{ backgroundColor: "var(--c-bg-subtle)" }}
       >
-        {/* Time */}
+        {/* Time — always gold per design spec */}
         <div style={{
           width: 52, flexShrink: 0, marginRight: 16,
           fontSize: 17, fontWeight: 700,
           fontFamily: "ui-monospace, monospace",
-          color: isCurrent ? "var(--c-accent)" : isPast ? "var(--c-fg-subtle)" : "var(--c-accent)",
+          color: "var(--c-accent)",
           letterSpacing: -0.3,
+          opacity: isPast ? 0.55 : 1,
         }}>
           {appt.startTime}
         </div>
 
         {/* Name + service */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, opacity: isPast ? 0.6 : 1 }}>
           <div style={{
             fontSize: 15, fontWeight: 700, color: "var(--c-fg)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -217,6 +217,7 @@ function ApptRow({
           fontFamily: "ui-monospace, monospace",
           color: "var(--c-fg)",
           fontVariantNumeric: "tabular-nums",
+          opacity: isPast ? 0.6 : 1,
         }}>
           €{appt.totalAmount}
         </div>
@@ -320,16 +321,18 @@ export default function DashboardPage() {
   const rows: Row[] = useMemo(() => {
     if (!betaMode) return sortedAppts.map(a => ({ type: "appt" as const, appt: a }));
     const result: Row[] = [];
-    for (const appt of sortedAppts) {
+    const breakInserted = new Set<string>();
+    for (let i = 0; i < sortedAppts.length; i++) {
+      const appt = sortedAppts[i];
+      // Check if a break should be inserted before this appointment
       for (const br of MOCK_BREAKS) {
-        const lastAppt = result.filter(r => r.type === "appt").at(-1) as { type: "appt"; appt: Appt } | undefined;
-        const lastTime = lastAppt ? toMinutes(lastAppt.appt.startTime) + lastAppt.appt.duration : 0;
-        if (
-          !result.find(r => r.type === "break") &&
-          lastTime <= toMinutes(br.afterTime) &&
-          toMinutes(appt.startTime) > toMinutes(br.afterTime)
-        ) {
-          result.push({ type: "break", label: br.label });
+        if (!breakInserted.has(br.label) && toMinutes(appt.startTime) >= toMinutes(br.afterTime) + 30) {
+          // Check previous appointment ended before break
+          const prev = sortedAppts[i - 1];
+          if (!prev || toMinutes(prev.startTime) + prev.duration <= toMinutes(br.afterTime) + 30) {
+            result.push({ type: "break", label: br.label });
+            breakInserted.add(br.label);
+          }
         }
       }
       result.push({ type: "appt", appt });
@@ -523,9 +526,7 @@ export default function DashboardPage() {
           const apptMin = toMinutes(appt.startTime);
           const isCurrent = nowMin >= apptMin && nowMin < apptMin + appt.duration;
           const isPast    = nowMin > apptMin + appt.duration;
-          const apptRows  = rows.filter(r => r.type === "appt");
-          const isLast    = apptRows[apptRows.length - 1].type === "appt" &&
-                            (apptRows[apptRows.length - 1] as { type: "appt"; appt: Appt }).appt.id === appt.id;
+            const isLast = i === rows.length - 1 || rows[i + 1]?.type === "break";
           return (
             <ApptRow
               key={appt.id}
