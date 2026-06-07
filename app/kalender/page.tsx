@@ -857,12 +857,13 @@ export default function KalenderPage() {
   }, [betaMode]);
 
   useEffect(() => {
+    if (betaMode) { setGcalLoading(false); return; } // No real data in demo mode
     fetch("/api/calendar")
       .then(r => r.json())
       .then(d => { if (d.error) setGcalError(d.error); else setGcalEvents(d.events ?? []); })
       .catch(e => setGcalError(String(e)))
       .finally(() => setGcalLoading(false));
-  }, []);
+  }, [betaMode]);
 
   const monday    = useMemo(() => getMonday(currentDate), [currentDate]);
   const wDates    = useMemo(() => weekDates(monday), [monday]);
@@ -1014,8 +1015,8 @@ export default function KalenderPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Google Kalender section ─────────────────────────── */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ marginTop: 24 }}>
+      {/* ── Google Kalender section — hidden in demo mode ───── */}
+      {!betaMode && <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ marginTop: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <CalIcon size={15} style={{ color: "var(--c-accent)" }} />
@@ -1066,7 +1067,7 @@ export default function KalenderPage() {
             ))}
           </div>
         )}
-      </motion.div>
+      </motion.div>}
 
       {/* ── Modals ──────────────────────────────────────────── */}
       <NewApptSlideOver

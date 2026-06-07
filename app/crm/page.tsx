@@ -402,12 +402,10 @@ export default function CRMPage() {
         transition={{ delay: 0.15, ease: EASE }}
         style={{ overflow: "hidden" }}
       >
-        {/* Table header */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 120px 100px 80px 28px",
-          gap: 12,
-          padding: "8px 20px",
+        {/* Table header — desktop only */}
+        <div className="hidden md:grid" style={{
+          gridTemplateColumns: "1fr 130px 110px 80px 28px",
+          gap: 12, padding: "8px 20px",
           borderBottom: "1px solid var(--c-border)",
         }}>
           {["Name", "Service", "Wunschtermin", "Preis", ""].map((h) => (
@@ -429,12 +427,12 @@ export default function CRMPage() {
             const name = f.Name || "—";
             const wunschDate = f.Wunschtermin
               ? new Date(f.Wunschtermin).toLocaleDateString("de-DE", { day: "2-digit", month: "short" })
-              : "—";
+              : null;
             const preis = f.Preis_Min_EUR != null
               ? f.Preis_Min_EUR === f.Preis_Max_EUR
                 ? `€${f.Preis_Min_EUR}`
                 : `€${f.Preis_Min_EUR}–${f.Preis_Max_EUR}`
-              : "—";
+              : null;
 
             return (
               <motion.div
@@ -445,58 +443,61 @@ export default function CRMPage() {
                 onClick={() => setSelected(lead)}
                 whileHover={{ backgroundColor: "var(--c-bg-subtle)" }}
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 120px 100px 80px 28px",
-                  gap: 12,
-                  alignItems: "center",
-                  padding: "12px 20px",
+                  padding: "13px 16px",
                   borderBottom: i < filtered.length - 1 ? "1px solid var(--c-border)" : "none",
                   cursor: "pointer",
                 }}
               >
-                {/* Name + email + status */}
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
-                    <StatusDot status={f.Status} />
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "var(--c-fg)" }}>{name}</span>
-                    {f.Warnung_Aktiv && (
-                      <span style={{ fontSize: 10, color: "var(--c-warning)", fontWeight: 600 }}>Warnung</span>
-                    )}
+                {/* Mobile layout: card */}
+                <div className="flex md:hidden" style={{ alignItems: "center", gap: 12 }}>
+                  {/* Avatar */}
+                  <div style={{
+                    width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+                    background: "var(--c-bg-strong)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 12, fontWeight: 800, color: "var(--c-accent)",
+                  }}>
+                    {name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
-                  {f.Email && (
-                    <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", display: "flex", alignItems: "center", gap: 4 }}>
-                      <Mail size={9} /> {f.Email}
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                      <StatusDot status={f.Status} />
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
                     </div>
-                  )}
+                    <div style={{ fontSize: 12, color: "var(--c-fg-subtle)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      {f.Dienstleistung && <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Scissors size={10} />{f.Dienstleistung}</span>}
+                      {wunschDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Clock size={10} />{wunschDate}</span>}
+                    </div>
+                  </div>
+                  {/* Price + chevron */}
+                  <div style={{ flexShrink: 0, textAlign: "right" }}>
+                    {preis && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>{preis}</div>}
+                    <ChevronRight size={14} style={{ color: "var(--c-fg-faint)", marginTop: 2 }} />
+                  </div>
                 </div>
 
-                {/* Service */}
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                  {f.Dienstleistung ? (
-                    <><Scissors size={10} /> {f.Dienstleistung}</>
-                  ) : (
-                    <span style={{ color: "var(--c-fg-faint)" }}>—</span>
-                  )}
-                </div>
-
-                {/* Wunschtermin */}
-                <div style={{
-                  fontSize: 12, color: "var(--c-fg-muted)",
-                  fontVariantNumeric: "tabular-nums",
-                  display: "flex", alignItems: "center", gap: 4,
+                {/* Desktop layout: grid */}
+                <div className="hidden md:grid" style={{
+                  gridTemplateColumns: "1fr 130px 110px 80px 28px",
+                  gap: 12, alignItems: "center",
                 }}>
-                  {wunschDate !== "—" ? <><Clock size={10} /> {wunschDate}</> : <span style={{ color: "var(--c-fg-faint)" }}>—</span>}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
+                      <StatusDot status={f.Status} />
+                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--c-fg)" }}>{name}</span>
+                    </div>
+                    {f.Email && <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", display: "flex", alignItems: "center", gap: 4 }}><Mail size={9} />{f.Email}</div>}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--c-fg-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                    {f.Dienstleistung ? <><Scissors size={10} />{f.Dienstleistung}</> : <span style={{ color: "var(--c-fg-faint)" }}>—</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--c-fg-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                    {wunschDate ? <><Clock size={10} />{wunschDate}</> : <span style={{ color: "var(--c-fg-faint)" }}>—</span>}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--c-fg)" }}>{preis ?? "—"}</div>
+                  <ChevronRight size={14} style={{ color: "var(--c-fg-faint)" }} />
                 </div>
-
-                {/* Preis */}
-                <div style={{
-                  fontSize: 12, fontWeight: 600, color: "var(--c-fg)",
-                  fontVariantNumeric: "tabular-nums",
-                }}>
-                  {preis}
-                </div>
-
-                <ChevronRight size={14} style={{ color: "var(--c-fg-faint)" }} />
               </motion.div>
             );
           })
