@@ -102,40 +102,33 @@ function LeadSheet({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
   return (
     <>
+      {/* Backdrop */}
       <motion.div
-        className="modal-overlay"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 200 }}
       />
+      {/* Bottom sheet — slides up from bottom, full width, no clipping */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 12 }}
-        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+        transition={{ type: "spring", stiffness: 360, damping: 34 }}
         style={{
-          position: "fixed",
-          zIndex: 101,
-          top: "50%", left: "50%",
-          transform: "translate(-50%,-50%)",
-          width: "min(460px, calc(100vw - 32px))",
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 201,
           background: "var(--c-bg-elevated)",
-          border: "1px solid var(--c-border-strong)",
-          borderRadius: 14,
-          boxShadow: "var(--c-shadow-lg)",
-          overflow: "hidden",
-          maxHeight: "85vh",
-          overflowY: "auto",
+          borderRadius: "20px 20px 0 0",
+          maxHeight: "88vh",
+          display: "flex", flexDirection: "column",
+          paddingBottom: "env(safe-area-inset-bottom, 16px)",
         }}
       >
+        {/* Drag handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--c-border)", margin: "12px auto 0", flexShrink: 0 }} />
         {/* Header */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "16px 20px",
+          padding: "12px 20px 12px",
           borderBottom: "1px solid var(--c-border)",
-          position: "sticky", top: 0,
-          background: "var(--c-bg-elevated)",
+          flexShrink: 0,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
@@ -161,6 +154,9 @@ function LeadSheet({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             <X size={15} />
           </button>
         </div>
+
+        {/* Scrollable content */}
+        <div style={{ flex: 1, overflowY: "auto" }}>
 
         {/* Notes */}
         {f["Kundenwunsch / Notizen"] && (
@@ -189,8 +185,10 @@ function LeadSheet({ lead, onClose }: { lead: Lead; onClose: () => void }) {
           ))}
         </div>
 
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 8, padding: "16px 20px 20px" }}>
+        </div>{/* end scrollable */}
+
+        {/* Actions — fixed at bottom */}
+        <div style={{ display: "flex", gap: 8, padding: "12px 20px 16px", borderTop: "1px solid var(--c-border)", flexShrink: 0 }}>
           {f.Email && (
             <button className="btn-ghost" style={{ flex: 1 }} onClick={() => window.open(`mailto:${f.Email}`)}>
               <Mail size={13} /> E-Mail
