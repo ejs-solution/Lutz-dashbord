@@ -1009,30 +1009,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Showroom banner */}
-        {showroom && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-              padding: "8px 20px",
-              background: "linear-gradient(90deg, rgba(212,176,119,0.12), rgba(212,176,119,0.08))",
-              borderBottom: "1px solid rgba(212,176,119,0.25)",
-              fontSize: 12,
-            }}
-          >
-            <span style={{ fontSize: 14 }}>✂️</span>
-            <span style={{ fontWeight: 700, color: "var(--c-accent)" }}>Showroom-Demo</span>
-            <span style={{ color: "var(--c-fg-subtle)" }}>· Alle Daten sind Beispieldaten</span>
-            <span style={{ color: "var(--c-fg-faint)", marginLeft: 4 }}>|</span>
-            <a
-              href="mailto:ejs-solution@outlook.de?subject=Interesse%20an%20CUTZ%20Solution"
-              style={{ color: "var(--c-accent)", fontWeight: 700, textDecoration: "none", fontSize: 12 }}
-            >
-              Jetzt anfragen →
-            </a>
-          </motion.div>
-        )}
         <main style={{ flex: 1 }}>{children}</main>
       </div>
 
