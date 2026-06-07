@@ -179,20 +179,19 @@ function ApptRow({
         onClick={onClick}
         whileTap={{ backgroundColor: "var(--c-bg-subtle)" }}
       >
-        {/* Time — always gold per design spec */}
+        {/* Time — always gold */}
         <div style={{
           width: 52, flexShrink: 0, marginRight: 16,
           fontSize: 17, fontWeight: 700,
           fontFamily: "ui-monospace, monospace",
           color: "var(--c-accent)",
           letterSpacing: -0.3,
-          opacity: isPast ? 0.55 : 1,
         }}>
           {appt.startTime}
         </div>
 
         {/* Name + service */}
-        <div style={{ flex: 1, minWidth: 0, opacity: isPast ? 0.6 : 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 15, fontWeight: 700, color: "var(--c-fg)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -217,7 +216,6 @@ function ApptRow({
           fontFamily: "ui-monospace, monospace",
           color: "var(--c-fg)",
           fontVariantNumeric: "tabular-nums",
-          opacity: isPast ? 0.6 : 1,
         }}>
           €{appt.totalAmount}
         </div>
@@ -523,9 +521,10 @@ export default function DashboardPage() {
             return <BreakDivider key={`break-${i}`} label={row.label} />;
           }
           const { appt } = row;
-          const apptMin = toMinutes(appt.startTime);
-          const isCurrent = nowMin >= apptMin && nowMin < apptMin + appt.duration;
-          const isPast    = nowMin > apptMin + appt.duration;
+            const apptMin = toMinutes(appt.startTime);
+          // Only mark as current — no past fading (looks broken in demo)
+          const isCurrent = !betaMode && nowMin >= apptMin && nowMin < apptMin + appt.duration;
+          const isPast    = false;
             const isLast = i === rows.length - 1 || rows[i + 1]?.type === "break";
           return (
             <ApptRow
