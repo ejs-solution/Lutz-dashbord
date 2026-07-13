@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useBeta } from "@/lib/beta-context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RefreshCw, Users, Clock, TrendingUp, MessageCircle, X,
@@ -258,16 +259,18 @@ export default function WinBackPage() {
   const [selected, setSelected]         = useState<Set<string>>(new Set());
   const [showCampaign, setShowCampaign] = useState(false);
   const [sortBy, setSortBy]             = useState<"months" | "value" | "visits">("months");
+  const { betaMode } = useBeta();
 
   const filtered = useMemo(() => {
-    const list = CHURNED.filter(c => c.monthsAbsent >= minMonths);
+    // Echtes Konto: keine erfundenen Kunden. Beispieldaten nur im Beta-/Demo-Modus.
+    const list = (betaMode ? CHURNED : []).filter(c => c.monthsAbsent >= minMonths);
     return [...list].sort((a, b) => {
       if (sortBy === "months")  return b.monthsAbsent - a.monthsAbsent;
       if (sortBy === "value")   return b.avgSpend - a.avgSpend;
       if (sortBy === "visits")  return b.totalVisits - a.totalVisits;
       return 0;
     });
-  }, [minMonths, sortBy]);
+  }, [minMonths, sortBy, betaMode]);
 
   const totalPotential = filtered.reduce((s, c) => s + c.avgSpend, 0);
   const avgMonths      = filtered.length

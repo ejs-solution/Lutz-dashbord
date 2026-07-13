@@ -7,6 +7,7 @@ import {
   Gift, Phone, Save, CheckCircle, Calendar, Mail, Link2, Check,
 } from "lucide-react";
 import { aiSettings as defaults } from "@/lib/mock-data";
+import BookingLinkCard from "@/components/dashboard/BookingLinkCard";
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
 
@@ -170,6 +171,11 @@ export default function SettingsPage() {
           </motion.button>
         </div>
       </motion.div>
+
+      {/* ── Buchungslink ── */}
+      <div style={{ marginBottom: 20 }}>
+        <BookingLinkCard />
+      </div>
 
       {/* ── Google Integration ── */}
       <motion.div

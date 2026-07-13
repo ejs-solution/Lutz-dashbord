@@ -87,7 +87,9 @@ export async function saveTenantTokens(tenantId: string, fields: GoogleTokens) {
 }
 
 /* ─── OAuth URL ──────────────────────────────────────────── */
-export function buildAuthUrl() {
+// state = tenant_id des Salons, damit der Callback den richtigen Salon kennt,
+// ohne auf die Login-Session im Rückkanal angewiesen zu sein.
+export function buildAuthUrl(state?: string) {
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
@@ -101,5 +103,6 @@ export function buildAuthUrl() {
     access_type: "offline",
     prompt: "consent",
   });
+  if (state) params.set("state", state);
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
+import NotificationToaster from "@/components/dashboard/NotificationToaster";
 import {
   LayoutDashboard, Inbox, CalendarDays, Users, Settings,
   BarChart2, FileText, Link2, Scissors, Search,
@@ -638,12 +639,13 @@ function WaitlistModal({ onClose }: { onClose: () => void }) {
 }
 
 /* ─── WaitlistBanner ─────────────────────────────────────── */
-function WaitlistBanner() {
+function WaitlistBanner({ enabled }: { enabled: boolean }) {
   const [visible, setVisible]     = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    // Show once per session after 3s delay (simulates real-time cancellation)
+    // Nur im Demo-/Beta-Modus (simuliert eine Echtzeit-Absage). Im echten Konto aus.
+    if (!enabled) return;
     const shown = sessionStorage.getItem("waitlist_shown");
     if (shown) return;
     const t = setTimeout(() => {
@@ -651,20 +653,20 @@ function WaitlistBanner() {
       sessionStorage.setItem("waitlist_shown", "1");
     }, 3000);
     return () => clearTimeout(t);
-  }, []);
+  }, [enabled]);
 
   return (
     <>
       <AnimatePresence>
         {visible && (
           <motion.div
-            initial={{ opacity: 0, y: -60 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -60 }}
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            initial={{ opacity: 0, x: 40, y: -8 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={{ opacity: 0, x: 40 }}
+            transition={{ type: "spring", stiffness: 300, damping: 26 }}
             style={{
-              position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)",
-              zIndex: 500, width: "min(680px, calc(100vw - 32px))",
+              position: "fixed", top: 16, right: 16,
+              zIndex: 700, width: "min(420px, calc(100vw - 32px))",
               background: "var(--c-bg-elevated)",
               border: "1px solid rgba(212,176,119,0.5)",
               borderLeft: "4px solid var(--c-accent)",
@@ -845,7 +847,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         style={{
           width: 220, flexShrink: 0, flexDirection: "column",
           background: "var(--c-bg-elevated)", borderRight: "1px solid var(--c-border)",
-          position: "sticky", top: 0, height: "100vh", overflowY: "auto",
+          position: "sticky", top: 0, height: "100dvh", overflow: "hidden",
         }}
       >
         {/* Logo (klein, nur Branding) */}
@@ -874,7 +876,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav style={{ flex: 1, padding: "14px 8px 0" }}>
+        <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "14px 8px 0" }}>
           <NavSection label="Workspace"     items={WORKSPACE} pathname={pathname} hrefTransform={navHref} />
           <NavSection label="Analyse"       items={ANALYSE}   pathname={pathname} hrefTransform={navHref} />
           <NavSection label="Konfiguration" items={CONFIG}    pathname={pathname} hrefTransform={navHref} />
@@ -923,9 +925,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
               <PaulPulse />
               <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-fg)", flex: 1 }}>Paul · KI-Agent</span>
-              <span style={{ fontSize: 10, color: "var(--c-fg-subtle)" }}>Ø 18s</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: "var(--c-success)" }}>ONLINE</span>
             </div>
-            <div style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>47 Aktionen heute</div>
+            <div style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>Beantwortet Anfragen automatisch</div>
           </div>
         </div>
 
@@ -983,7 +985,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, color: "var(--c-fg-muted)", background: "var(--c-bg-subtle)", border: "1px solid var(--c-border)", padding: "0 8px", height: 26, borderRadius: 6 }}>
               <PaulPulse />
-              <span>47 Live</span>
+              <span>Live</span>
             </div>
             <ThemeToggle />
           </div>
@@ -1083,7 +1085,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       <PaulPulse />
                       <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-fg)", flex: 1 }}>Paul · KI-Agent</span>
                     </div>
-                    <div style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>47 Aktionen heute</div>
+                    <div style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>Aktiv · antwortet automatisch</div>
                   </div>
                 </div>
 
@@ -1123,7 +1125,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
 
       {/* Waitlist notification banner */}
-      <WaitlistBanner />
+      <WaitlistBanner enabled={betaMode} />
+      {!showroom && <NotificationToaster />}
 
       {/* Support modal */}
       <AnimatePresence>
