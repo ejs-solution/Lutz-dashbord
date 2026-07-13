@@ -69,11 +69,11 @@ function InstagramIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function AirtableIcon({ size = 18 }: { size?: number }) {
+function SupabaseIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="4" fill="#FCB400"/>
-      <path d="M5 8h14v2H5V8zm0 4h9v2H5v-2zm0 4h6v2H5v-2z" fill="white"/>
+      <rect width="24" height="24" rx="4" fill="#3ECF8E"/>
+      <path d="M13 3 6 13h5l-1 8 8-11h-6l1-7z" fill="white"/>
     </svg>
   );
 }
@@ -146,11 +146,11 @@ export default function IntegrationsPage() {
     },
     // ── Daten
     {
-      id: "airtable",
-      name: "Airtable",
-      description: "Deine Kundendaten, Termine und Mitarbeiter werden in Airtable gespeichert.",
+      id: "supabase",
+      name: "Supabase",
+      description: "Deine Kundendaten, Termine und Mitarbeiter werden sicher in Supabase (EU / Frankfurt) gespeichert.",
       status: "connected",
-      icon: <AirtableIcon size={22} />,
+      icon: <SupabaseIcon size={22} />,
       category: "Datenbank",
     },
   ];

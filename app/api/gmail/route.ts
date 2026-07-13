@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getTenant, getAccessToken } from "@/lib/google-auth";
+import { getTenantTokens, getAccessToken } from "@/lib/google-auth";
+import { getTenantId } from "@/lib/tenant";
 
 type GmailHeader = { name: string; value: string };
 
@@ -9,8 +10,8 @@ function header(headers: GmailHeader[], name: string) {
 
 export async function GET() {
   try {
-    const tenant = await getTenant();
-    const refreshToken = tenant.fields.gmail_refresh_token;
+    const tokens = await getTenantTokens(await getTenantId());
+    const refreshToken = tokens.gmail_refresh_token;
 
     if (!refreshToken) {
       return NextResponse.json({ error: "not_connected" }, { status: 401 });

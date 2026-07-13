@@ -25,7 +25,7 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 export default function AnalyticsPage() {
   const { betaMode } = useBeta();
 
-  /* ── Airtable Leads (always real) ── */
+  /* ── Supabase Leads (always real) ── */
   const [leads, setLeads]         = useState<Lead[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(true);
 
@@ -34,7 +34,7 @@ export default function AnalyticsPage() {
   const [apptsLoading, setApptsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/airtable?table=Leads&maxRecords=100")
+    fetch("/api/leads?maxRecords=100")
       .then(r => r.json())
       .then(d => d.records && setLeads(d.records))
       .catch(() => {})
@@ -199,10 +199,10 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {/* ── Lead status (always from Airtable) ── */}
+      {/* ── Lead status (always from Supabase) ── */}
       {!loading && total > 0 && (
         <div className="card" style={{ padding: "20px 24px", marginBottom: 24 }}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: "var(--text)", marginBottom: 16 }}>Lead-Status (Airtable)</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: "var(--text)", marginBottom: 16 }}>Lead-Status (Supabase)</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {statusData.map(({ name, value, color }) => (
               <div key={name}>
@@ -258,12 +258,12 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      {/* Empty state (live, no Airtable data yet) */}
+      {/* Empty state (live, no Supabase data yet) */}
       {!loading && !betaMode && appts.length === 0 && total === 0 && (
         <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
           <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text)", marginBottom: 6 }}>Noch keine Daten</div>
-          <div style={{ fontSize: 13 }}>Sobald Termine und Leads in Airtable sind, erscheinen hier echte Zahlen.</div>
+          <div style={{ fontSize: 13 }}>Sobald Termine und Leads in Supabase sind, erscheinen hier echte Zahlen.</div>
         </div>
       )}
     </div>

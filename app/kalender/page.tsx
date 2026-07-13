@@ -75,7 +75,7 @@ function hasConflict(a: ApptWithDate, pool: ApptWithDate[]): boolean {
   );
 }
 
-/* ─── Shift generation (local until Airtable Shifts is seeded) ── */
+/* ─── Shift generation (local until Supabase Shifts is seeded) ── */
 type Shift = { id: string; employee: Employee; date: string; start: string; end: string };
 
 function makeShifts(dates: Date[]): Shift[] {
@@ -813,13 +813,13 @@ export default function KalenderPage() {
   const [gcalLoading, setGcalLoading] = useState(true);
   const [gcalError,   setGcalError]   = useState<string | null>(null);
 
-  // Appointments: mock seed in beta mode, empty + fetch from Airtable in live mode
+  // Appointments: mock seed in beta mode, empty + fetch from Supabase in live mode
   const todayISO = useMemo(() => toISO(new Date()), []);
   const [appts, setAppts] = useState<ApptWithDate[]>(() =>
     betaMode ? todayAppointments.map(a => ({ ...a, date: todayISO })) : []
   );
 
-  // Load real appointments from Airtable when not in beta mode
+  // Load real appointments from Supabase when not in beta mode
   useEffect(() => {
     if (betaMode) {
       setAppts(todayAppointments.map(a => ({ ...a, date: todayISO })));

@@ -12,7 +12,7 @@ import {
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-/* ─── Airtable types ─────────────────────────────────────── */
+/* ─── Supabase types ─────────────────────────────────────── */
 type LeadFields = {
   Name?: string;
   Email?: string;
@@ -237,7 +237,7 @@ export default function CRMPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/airtable?table=Leads&maxRecords=200");
+      const res = await fetch("/api/leads?maxRecords=200");
       if (!res.ok) throw new Error(`Fehler ${res.status}`);
       const data = await res.json();
       const records: Lead[] = (data.records ?? []).filter(
@@ -292,7 +292,7 @@ export default function CRMPage() {
           <div>
             <h1 className="text-h1" style={{ color: "var(--c-fg)", marginBottom: 4 }}>Kunden</h1>
             <p style={{ fontSize: 13, color: "var(--c-fg-muted)" }}>
-              {loading ? "Lädt..." : `${leads.length} Einträge aus Airtable`}
+              {loading ? "Lädt..." : `${leads.length} Einträge aus Supabase`}
             </p>
           </div>
           <button

@@ -59,11 +59,13 @@ export default function DatenschutzPage() {
         </p>
       </Section>
 
-      <Section title="6. Datenspeicherung in Airtable">
+      <Section title="6. Datenspeicherung in Supabase">
         <p style={p}>
-          Termindaten, Kundendaten und Mitarbeiterdaten werden in <strong style={{ color: "var(--c-fg)" }}>Airtable</strong> (Formagrid Inc.,
-          799 Market St, San Francisco, CA 94103, USA) gespeichert. Mit Airtable besteht ein
-          Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO. Airtable ist nach dem EU-US Data Privacy Framework zertifiziert.
+          Termindaten, Kundendaten und Mitarbeiterdaten werden in <strong style={{ color: "var(--c-fg)" }}>Supabase</strong> (Supabase Inc.)
+          gespeichert. Das Hosting erfolgt in einem Rechenzentrum in der <strong style={{ color: "var(--c-fg)" }}>Europäischen Union
+          (Frankfurt am Main, AWS eu-central-1)</strong>. Die in Supabase gespeicherten personenbezogenen Daten verbleiben in der EU;
+          eine Speicherung dieser Daten in den USA findet nicht statt.
+          Mit dem Anbieter besteht ein Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO.
         </p>
         <p style={p}>
           Gespeicherte Daten: Kundennamen, Telefonnummern, gebuchte Dienstleistungen, Termine, Zahlungsbeträge.
@@ -81,7 +83,23 @@ export default function DatenschutzPage() {
         </p>
       </Section>
 
-      <Section title="8. Ihre Rechte">
+      <Section title="8. KI-gestützter E-Mail-Assistent (Paul)">
+        <p style={p}>
+          Zur automatischen Beantwortung von Kundenanfragen und zur Terminbuchung setzen wir einen KI-Assistenten („Paul") ein.
+          Dabei werden die Inhalte eingehender Nachrichten (z.&nbsp;B. Name, Kontaktdaten, Terminwunsch) zur Antwortgenerierung an{" "}
+          <strong style={{ color: "var(--c-fg)" }}>Anthropic PBC</strong> (Modell „Claude", 548 Market St, San Francisco, CA, USA) übermittelt.
+          Es handelt sich hierbei um eine <strong style={{ color: "var(--c-fg)" }}>Übermittlung in ein Drittland (USA)</strong>.
+        </p>
+        <p style={p}>
+          Die Übermittlung wird durch einen Auftragsverarbeitungsvertrag mit Anthropic sowie geeignete Garantien
+          (EU-Standardvertragsklauseln bzw. EU-US Data Privacy Framework) abgesichert. Die Inhalte werden ausschließlich
+          zur Erbringung der Antwortfunktion verarbeitet und nach Angaben des Anbieters nicht zu Trainingszwecken genutzt.
+          Rechtsgrundlage: Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;b DSGVO (Vertragsanbahnung/-erfüllung) bzw. Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;f DSGVO
+          (berechtigtes Interesse an effizienter Kundenkommunikation).
+        </p>
+      </Section>
+
+      <Section title="9. Ihre Rechte">
         <p style={p}>Sie haben gemäß DSGVO folgende Rechte:</p>
         <ul style={{ paddingLeft: 20, margin: "8px 0" }}>
           {[
@@ -103,14 +121,14 @@ export default function DatenschutzPage() {
         </p>
       </Section>
 
-      <Section title="9. Datensicherheit">
+      <Section title="10. Datensicherheit">
         <p style={p}>
           Unsere Website nutzt ausschließlich HTTPS-Verschlüsselung (TLS). Der Zugang zur Verwaltungsoberfläche
           ist durch eine Authentifizierung (E-Mail + Passwort) geschützt. Passwörter werden gehasht gespeichert.
         </p>
       </Section>
 
-      <Section title="10. Änderungen dieser Datenschutzerklärung">
+      <Section title="11. Änderungen dieser Datenschutzerklärung">
         <p style={p}>
           Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen. Die aktuelle Version ist stets
           unter <strong style={{ color: "var(--c-fg)" }}>cutzdashboard.vercel.app/datenschutz</strong> abrufbar.

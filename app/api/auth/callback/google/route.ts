@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exchangeCode, getTenant, saveTenantTokens } from "@/lib/google-auth";
+import { exchangeCode, saveTenantTokens } from "@/lib/google-auth";
+import { requireTenantId } from "@/lib/tenant";
 
 export async function GET(req: NextRequest) {
   const code  = req.nextUrl.searchParams.get("code");
@@ -13,10 +14,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCode(code);
-    const tenant = await getTenant();
+    const tenantId = await requireTenantId();
+    if (!tenantId) {
+      return NextResponse.redirect(new URL("/settings?google_error=not_logged_in", req.url));
+    }
 
-    await saveTenantTokens(tenant.id, {
+    const tokens = await exchangeCode(code);
+
+    await saveTenantTokens(tenantId, {
       gmail_refresh_token:            tokens.refresh_token,
       google_calendar_refresh_token:  tokens.refresh_token,
     });

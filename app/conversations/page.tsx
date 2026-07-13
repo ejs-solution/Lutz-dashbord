@@ -154,7 +154,7 @@ export default function ConversationsPage() {
   const [selected, setSelected] = useState<Lead | null>(null);
 
   useEffect(() => {
-    fetch("/api/airtable?table=Leads&maxRecords=100")
+    fetch("/api/leads?maxRecords=100")
       .then((r) => r.json())
       .then((d) => d.records && setLeads(d.records))
       .catch(() => {})

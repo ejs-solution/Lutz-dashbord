@@ -16,7 +16,7 @@ export default function ROIPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/airtable?table=Leads&maxRecords=100")
+    fetch("/api/leads?maxRecords=100")
       .then((r) => r.json())
       .then((d) => d.records && setLeads(d.records))
       .catch(() => {})

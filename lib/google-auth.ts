@@ -1,8 +1,14 @@
+// Server-only: nutzt den service_role-Key, damit die Google-Tokens per RLS vor dem
+// öffentlichen anon-Key geschützt sind, ohne dass diese Server-Reads/-Writes brechen.
+import { supabaseAdmin as supabase } from "@/lib/supabase-admin";
+
 const CLIENT_ID     = process.env.GOOGLE_CLIENT_ID!;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
 const REDIRECT_URI  = process.env.GOOGLE_REDIRECT_URI!;
-const BASE_ID       = process.env.AIRTABLE_BASE_ID!;
-const AT_KEY        = process.env.AIRTABLE_API_KEY!;
+
+// Maincut-Salon: Fallback-Ziel für die Legacy-Tokens aus `settings` (id=1),
+// bis Google pro Salon neu verbunden wurde.
+const MAINCUT_TENANT_ID = "8ef51fd0-e5b1-4cf4-b0cf-41d7a354b3e8";
 
 /* ─── Exchange code → tokens ─────────────────────────────── */
 export async function exchangeCode(code: string) {
@@ -39,36 +45,45 @@ export async function getAccessToken(refreshToken: string): Promise<string> {
   return data.access_token;
 }
 
-/* ─── Airtable Tenants helpers ───────────────────────────── */
-type TenantFields = {
-  gmail_refresh_token?: string;
-  google_calendar_refresh_token?: string;
-  gmail_email?: string;
+/* ─── Google-Tokens pro Salon (tenants) ──────────────────── */
+export type GoogleTokens = {
+  gmail_refresh_token?: string | null;
+  google_calendar_refresh_token?: string | null;
+  gmail_email?: string | null;
 };
 
-async function atFetch(path: string, opts?: RequestInit) {
-  return fetch(`https://api.airtable.com/v0/${BASE_ID}${path}`, {
-    ...opts,
-    headers: {
-      Authorization: `Bearer ${AT_KEY}`,
-      "Content-Type": "application/json",
-      ...(opts?.headers ?? {}),
-    },
-  });
+// Liest die Google-Tokens des Salons aus `tenants`. Fehlen sie dort (noch),
+// Fallback auf die Legacy-Tabelle `settings` (id=1) — nur für Maincut, bis Google
+// dort neu verbunden wurde. So bleibt der Einzel-Salon-Betrieb unverändert.
+export async function getTenantTokens(tenantId: string): Promise<GoogleTokens> {
+  const { data } = await supabase
+    .from("tenants")
+    .select("gmail_refresh_token, google_calendar_refresh_token, gmail_email")
+    .eq("id", tenantId)
+    .maybeSingle();
+
+  if (data && (data.gmail_refresh_token || data.google_calendar_refresh_token)) {
+    return data as GoogleTokens;
+  }
+
+  if (tenantId === MAINCUT_TENANT_ID) {
+    const { data: legacy } = await supabase
+      .from("settings")
+      .select("gmail_refresh_token, google_calendar_refresh_token, gmail_email")
+      .eq("id", 1)
+      .maybeSingle();
+    if (legacy) return legacy as GoogleTokens;
+  }
+  return {};
 }
 
-export async function getTenant(): Promise<{ id: string; fields: TenantFields }> {
-  const res = await atFetch("/Tenants?maxRecords=1");
-  const data = await res.json() as { records: { id: string; fields: TenantFields }[] };
-  if (!data.records?.[0]) throw new Error("Kein Tenant gefunden");
-  return data.records[0];
-}
-
-export async function saveTenantTokens(recordId: string, fields: TenantFields) {
-  await atFetch(`/Tenants/${recordId}`, {
-    method: "PATCH",
-    body: JSON.stringify({ fields }),
-  });
+// Schreibt die Google-Tokens in die tenants-Zeile des Salons.
+export async function saveTenantTokens(tenantId: string, fields: GoogleTokens) {
+  const { error } = await supabase
+    .from("tenants")
+    .update(fields)
+    .eq("id", tenantId);
+  if (error) throw new Error(error.message);
 }
 
 /* ─── OAuth URL ──────────────────────────────────────────── */

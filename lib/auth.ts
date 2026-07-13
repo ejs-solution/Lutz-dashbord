@@ -1,48 +1,38 @@
 import type { NextAuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
-const AIRTABLE_KEY  = process.env.AIRTABLE_API_KEY!;
-const AIRTABLE_BASE = process.env.AIRTABLE_BASE_ID!;
-
-type AirtableAccount = {
+type Account = {
   id: string;
-  Name: string;
-  Email: string;
-  PasswordHash: string;
-  Role?: string;
-  TenantId?: string;
-  IsActive?: boolean;
+  name: string | null;
+  email: string;
+  password_hash: string;
+  role: string | null;
+  tenant_id: string | null;
+  is_active: boolean | null;
 };
 
-async function findAccountByEmail(email: string): Promise<AirtableAccount | null> {
-  try {
-    const filter = encodeURIComponent(`{Email}="${email}"`);
-    const res = await fetch(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE}/Accounts?filterByFormula=${filter}&maxRecords=1`,
-      { headers: { Authorization: `Bearer ${AIRTABLE_KEY}` }, cache: "no-store" }
-    );
-    if (!res.ok) return null;
-    const data = await res.json() as { records: { id: string; fields: Record<string, unknown> }[] };
-    const record = data.records?.[0];
-    if (!record) return null;
-    return { id: record.id, ...(record.fields as Omit<AirtableAccount, "id">) };
-  } catch {
-    return null;
-  }
+async function findAccountByEmail(email: string): Promise<Account | null> {
+  const { data, error } = await supabaseAdmin
+    .from("accounts")
+    .select("id, name, email, password_hash, role, tenant_id, is_active")
+    .ilike("email", email)
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as Account;
 }
 
 async function updateLastLogin(accountId: string) {
   try {
-    await fetch(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE}/Accounts/${accountId}`,
-      {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${AIRTABLE_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ fields: { LastLogin: new Date().toISOString() } }),
-      }
-    );
-  } catch { /* non-critical */ }
+    await supabaseAdmin
+      .from("accounts")
+      .update({ last_login: new Date().toISOString() })
+      .eq("id", accountId);
+  } catch {
+    /* non-critical */
+  }
 }
 
 interface CutzUser extends User {
@@ -61,7 +51,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials): Promise<CutzUser | null> {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // Demo account — works without Airtable setup
+        // Demo account — funktioniert ohne DB-Setup
         if (
           credentials.email === "demo@cutzsolution.com" &&
           credentials.password === "demo123"
@@ -77,19 +67,19 @@ export const authOptions: NextAuthOptions = {
 
         const account = await findAccountByEmail(credentials.email);
         if (!account) return null;
-        if (account.IsActive === false) return null;
+        if (account.is_active === false) return null;
 
-        const valid = await bcrypt.compare(credentials.password, account.PasswordHash);
+        const valid = await bcrypt.compare(credentials.password, account.password_hash);
         if (!valid) return null;
 
         void updateLastLogin(account.id);
 
         return {
           id:       account.id,
-          name:     account.Name,
-          email:    account.Email,
-          role:     account.Role     ?? "owner",
-          tenantId: account.TenantId ?? "",
+          name:     account.name ?? account.email,
+          email:    account.email,
+          role:     account.role      ?? "owner",
+          tenantId: account.tenant_id ?? "",
         };
       },
     }),
