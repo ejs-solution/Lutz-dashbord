@@ -41,14 +41,18 @@ export async function POST(req: NextRequest) {
 
   const total = Math.round((service.priceMin + service.priceMax) / 2);
   const idempotencyKey = randomUUID();
+  const manageToken = randomUUID();
+  const manageUrl = `${new URL(req.url).origin}/termin/${manageToken}`;
 
   const { data, error } = await supabase
     .from("appointments")
     .insert({
       tenant_id: salon.id,
       idempotency_key: idempotencyKey,
+      manage_token: manageToken,
       customer_name: body.name.trim(),
       customer_phone: body.phone?.trim() || null,
+      customer_email: body.email?.trim() || null,
       service: service.name,
       employee: "Unbesetzt",
       date: body.date,
@@ -89,6 +93,7 @@ export async function POST(req: NextRequest) {
           date: body.date,
           time: body.time,
           duration: service.durationMin,
+          manage_url: manageUrl,
         }),
       });
     } catch {
@@ -96,5 +101,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, id: data.id }, { status: 201 });
+  return NextResponse.json({ ok: true, id: data.id, manageToken }, { status: 201 });
 }

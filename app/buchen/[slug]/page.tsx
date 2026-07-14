@@ -51,6 +51,7 @@ export default function BuchenPage() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [manageToken, setManageToken] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -102,6 +103,8 @@ export default function BuchenPage() {
       });
       if (r.status === 409) { setErr("Dieser Termin wurde leider gerade vergeben. Bitte wähle eine andere Uhrzeit."); setStep(3); if (date && service) loadSlots(date, service); return; }
       if (!r.ok) { setErr("Etwas ist schiefgelaufen. Bitte versuche es erneut."); return; }
+      const j = await r.json().catch(() => ({} as { manageToken?: string }));
+      setManageToken(j.manageToken ?? null);
       setStep(5);
     } catch { setErr("Netzwerkfehler. Bitte versuche es erneut."); }
     finally { setSubmitting(false); }
@@ -284,6 +287,11 @@ export default function BuchenPage() {
                   <SumRow icon={Calendar} l="Datum" r={date ? longDate(date) : ""} />
                   <SumRow icon={Clock} l="Uhrzeit" r={time ? `${time} Uhr` : ""} last />
                 </div>
+                {manageToken && (
+                  <a href={`/termin/${manageToken}`} style={{ display: "inline-block", marginTop: 18, fontSize: 13, color: "var(--c-accent)", textDecoration: "none", fontWeight: 600 }}>
+                    Termin ändern oder absagen →
+                  </a>
+                )}
               </div>
             </Panel>
           )}

@@ -830,7 +830,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const navHref = (href: string) => showroom ? `/demo${href === "/" ? "" : href}` : href;
 
   // Login/Signup und die öffentliche Buchungsseite ohne Dashboard-Shell rendern.
-  if (AUTH_ROUTES.some(r => pathname.startsWith(r)) || pathname.startsWith("/buchen")) {
+  if (AUTH_ROUTES.some(r => pathname.startsWith(r)) || pathname.startsWith("/buchen") || pathname.startsWith("/termin")) {
     return <>{children}</>;
   }
   // Public demo routes — render full shell but without session requirement

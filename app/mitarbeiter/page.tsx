@@ -8,6 +8,7 @@ import {
   Trash2, Calendar,
 } from "lucide-react";
 import { SERVICE_CATALOG, SERVICE_CATEGORIES } from "@/lib/services-catalog";
+import WorkHoursEditor from "@/components/dashboard/WorkHoursEditor";
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
 
@@ -492,6 +493,13 @@ export default function MitarbeiterPage() {
           </div>
           <span style={{ fontSize: 13, fontWeight: 700 }}>Mitarbeiter hinzufügen</span>
         </motion.button>
+      </div>
+
+      {/* Arbeitszeiten (steuern die Online-Buchung) */}
+      <div style={{ marginTop: 36 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>Arbeitszeiten</h2>
+        <p style={{ fontSize: 13, color: "var(--c-fg-subtle)", marginBottom: 16 }}>Legt fest, wann online Termine buchbar sind.</p>
+        <WorkHoursEditor />
       </div>
 
       {/* Slide-Over */}
