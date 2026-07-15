@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Phone, Mail, AtSign,
   UserCheck, Play, Send, ChevronLeft, Zap, RefreshCw, ExternalLink,
-  CalendarPlus, Loader2, X, Check,
+  CalendarPlus, Loader2, X, Check, MailOpen, Archive, Sparkles,
 } from "lucide-react";
 import { conversations, type Conversation } from "@/lib/mock-data";
 import { useBeta } from "@/lib/beta-context";
@@ -112,10 +112,16 @@ function GmailDetail({ msg, onBack, onCreated }: { msg: GmailMessage; onBack: ()
   const [body, setBody] = useState<string | null>(null);
   const [bodyLoading, setBodyLoading] = useState(true);
   const [showAppt, setShowAppt] = useState(false);
+  const [reply, setReply] = useState("");
+  const [drafting, setDrafting] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    setBody(null); setBodyLoading(true);
+    setBody(null); setBodyLoading(true); setReply(""); setSent(false); setNote(null);
     fetch(`/api/gmail/message?id=${msg.id}`)
       .then(r => r.json())
       .then(d => { if (active) setBody((d.body && d.body.trim()) || msg.snippet || "(kein Inhalt)"); })
@@ -123,6 +129,36 @@ function GmailDetail({ msg, onBack, onCreated }: { msg: GmailMessage; onBack: ()
       .finally(() => { if (active) setBodyLoading(false); });
     return () => { active = false; };
   }, [msg.id, msg.snippet]);
+
+  async function modify(action: "markRead" | "archive") {
+    setBusy(action); setNote(null);
+    try {
+      const r = await fetch("/api/gmail/modify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: msg.id, action }) });
+      if (!r.ok) { setNote("Aktion fehlgeschlagen — evtl. Google neu verbinden."); return; }
+      onCreated();
+    } catch { setNote("Netzwerkfehler."); }
+    finally { setBusy(null); }
+  }
+  async function paulDraft() {
+    setDrafting(true); setNote(null);
+    try {
+      const r = await fetch("/api/inbox/paul-draft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ from: msg.from, subject: msg.subject, body: body ?? msg.snippet }) });
+      const d = await r.json();
+      if (!r.ok || d.error) { setNote(d.error === "no_key" ? "Kein Anthropic-Key in der App hinterlegt." : "Vorschlag fehlgeschlagen."); return; }
+      setReply(d.draft || "");
+    } catch { setNote("Netzwerkfehler."); }
+    finally { setDrafting(false); }
+  }
+  async function send() {
+    if (!reply.trim()) return;
+    setSending(true); setNote(null);
+    try {
+      const r = await fetch("/api/gmail/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: email, subject: msg.subject, body: reply, threadId: msg.threadId }) });
+      if (!r.ok) { setNote("Senden fehlgeschlagen — evtl. Google neu verbinden."); return; }
+      setSent(true); setReply("");
+    } catch { setNote("Netzwerkfehler."); }
+    finally { setSending(false); }
+  }
 
   return (
     <>
@@ -136,6 +172,8 @@ function GmailDetail({ msg, onBack, onCreated }: { msg: GmailMessage; onBack: ()
             <span style={{ fontSize: 12, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{email}</span>
           </div>
         </div>
+        {msg.unread && <button onClick={() => modify("markRead")} title="Als gelesen markieren" style={detailIconBtn}>{busy === "markRead" ? <Loader2 size={15} className="spin" /> : <MailOpen size={15} />}</button>}
+        <button onClick={() => modify("archive")} title="Archivieren" style={detailIconBtn}>{busy === "archive" ? <Loader2 size={15} className="spin" /> : <Archive size={15} />}</button>
         <button onClick={() => setShowAppt(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 10, background: "linear-gradient(135deg, var(--c-accent), #e8cfa0)", color: "#2a1f12", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer" }}>
           <CalendarPlus size={14} /> Als Termin anlegen
         </button>
@@ -152,6 +190,22 @@ function GmailDetail({ msg, onBack, onCreated }: { msg: GmailMessage; onBack: ()
         ) : (
           <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{body}</div>
         )}
+      </div>
+
+      {/* Antwort-Composer */}
+      <div style={{ padding: "12px 16px", background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
+        {note && <div style={{ fontSize: 12, color: "var(--red)", marginBottom: 8 }}>{note}</div>}
+        <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Antwort schreiben — oder Paul vorschlagen lassen…" rows={3}
+          style={{ width: "100%", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 11, padding: "10px 12px", fontSize: 14, color: "var(--text)", resize: "vertical", outline: "none", fontFamily: "inherit", marginBottom: 8 }} />
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+          {sent && <span style={{ fontSize: 12, color: "var(--green)", fontWeight: 700, marginRight: "auto" }}>Antwort gesendet ✓</span>}
+          <button onClick={paulDraft} disabled={drafting} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "transparent", color: "var(--accent)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            {drafting ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} Paul-Vorschlag
+          </button>
+          <button onClick={send} disabled={!reply.trim() || sending} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 15px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, var(--c-accent), #e8cfa0)", color: "#2a1f12", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", opacity: (!reply.trim() || sending) ? 0.55 : 1 }}>
+            {sending ? <Loader2 size={15} className="spin" /> : <Send size={15} />} Senden
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -247,6 +301,7 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
   <label style={{ display: "block" }}><span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{label}</span>{children}</label>
 );
 const inp: React.CSSProperties = { width: "100%", padding: "9px 11px", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 9, color: "var(--text)", fontSize: 14, fontFamily: "inherit" };
+const detailIconBtn: React.CSSProperties = { width: 34, height: 34, borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-muted)", flexShrink: 0 };
 function chip(on: boolean): React.CSSProperties {
   return { padding: "5px 11px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`, background: on ? "var(--accent-glow)" : "transparent", color: on ? "var(--accent)" : "var(--text-muted)" };
 }
