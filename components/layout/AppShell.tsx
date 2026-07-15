@@ -920,7 +920,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ══ Main area ════════════════════════════════════════ */}
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", paddingBottom: 72 }} className="md:pb-0">
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }} className="app-main">
 
         {/* Desktop topbar */}
         <header

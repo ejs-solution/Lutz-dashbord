@@ -362,6 +362,11 @@ body {
 }
 [data-theme="light"] .bottom-nav { background: rgba(251,250,247,0.92); }
 
+/* Bottom-Nav nur auf Mobile — auf Desktop (>=768px) übernimmt die Sidebar */
+@media (min-width: 768px) { .bottom-nav { display: none !important; } }
+.app-main { padding-bottom: 72px; }
+@media (min-width: 768px) { .app-main { padding-bottom: 0; } }
+
 .bottom-nav-item {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   padding: 10px 4px;
