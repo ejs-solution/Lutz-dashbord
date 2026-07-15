@@ -4,9 +4,23 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { AlertTriangle, X, RefreshCw, ChevronRight, Ban, CalendarDays, TrendingUp, Clock, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useBeta } from "@/lib/beta-context";
 import { todayAppointments } from "@/lib/mock-data";
 import DashboardExtras from "@/components/dashboard/DashboardExtras";
+
+const SAYINGS = [
+  "Der Kamm ist gezückt, die Schere bereit.",
+  "Ein guter Tag beginnt mit einem frischen Schnitt.",
+  "Schnippschnapp – heute wird gestylt!",
+  "Kein Problem, das ein neuer Haarschnitt nicht besser macht.",
+  "Haare heute, Legenden morgen.",
+  "Möge dein Kaffee stark sein und dein Föhn heiß.",
+  "Erst der Kaffee, dann die Schere.",
+  "Gute Laune ist das beste Styling-Produkt.",
+  "Jeder Schnitt ist ein kleines Kunstwerk.",
+  "Heute schon jemandem den Tag verschönert?",
+];
 
 /* ─── Types ──────────────────────────────────────────────── */
 type Appt = {
@@ -258,6 +272,10 @@ export default function DashboardPage() {
   const listRef     = useRef<HTMLDivElement>(null);
   const now         = new Date();
   const nowMin      = now.getHours() * 60 + now.getMinutes();
+  const { data: session } = useSession();
+  const [clock, setClock] = useState<Date>(() => new Date());
+  useEffect(() => { const t = setInterval(() => setClock(new Date()), 1000); return () => clearInterval(t); }, []);
+  const [saying] = useState(() => SAYINGS[Math.floor(Math.random() * SAYINGS.length)]);
 
   /* ── Load data ── */
   const load = useCallback(async (silent = false) => {
@@ -346,11 +364,18 @@ export default function DashboardPage() {
       {/* ══ FIXED HEADER (never scrolls) ══ */}
       <div style={{ flexShrink: 0 }}>
 
-      {/* ── Header ── */}
-      <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid var(--c-border)" }}>
-        <div style={{ fontSize: 13, color: "var(--c-fg-subtle)", fontWeight: 400 }}>
-          {fmtDate(now)}
+      {/* ── Header: Live-Uhr + Begrüßung + Spruch ── */}
+      <div style={{ padding: "16px 18px 14px", borderBottom: "1px solid var(--c-border)" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 30, fontWeight: 800, color: "var(--c-fg)", fontVariantNumeric: "tabular-nums", letterSpacing: -0.5, lineHeight: 1 }}>
+            {clock.toLocaleTimeString("de-DE")}
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--c-fg-muted)" }}>{fmtDate(now)}</div>
         </div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: "var(--c-fg)", marginTop: 9 }}>
+          {clock.getHours() < 11 ? "Guten Morgen" : clock.getHours() < 17 ? "Guten Tag" : "Guten Abend"}, {betaMode ? "Demo Salon" : (session?.user?.name?.split(" ")[0] || "Team")}
+        </div>
+        <div style={{ fontSize: 13, color: "var(--c-fg-muted)", marginTop: 3, fontStyle: "italic" }}>{saying}</div>
       </div>
 
       {/* ── 3 numbers ── */}
@@ -358,7 +383,7 @@ export default function DashboardPage() {
         {([{
           value: loading ? "–" : String(appts.length), label: "Termine heute", href: "/kalender", icon: CalendarDays,
         }, {
-          value: loading ? "–" : `€ ${totalRevenue}`, label: "erwartet", href: null, icon: TrendingUp,
+          value: loading ? "–" : `${Math.round(appts.reduce((s, a) => s + a.duration, 0) / 6) / 10} Std`, label: "Verplante Stunden", href: null, icon: Clock,
         }, {
           value: loading ? "–" : String(openDeposits), label: "offen", href: null, icon: Clock,
         }] as { value: string; label: string; href: string | null; icon: LucideIcon }[]).map(({ value, label, href, icon: Icon }) => {
@@ -389,8 +414,8 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* ── Employee tabs ── */}
-      <div style={{
+      {/* ── Employee tabs (nur wenn Termine vorhanden) ── */}
+      {appts.length > 0 && <div style={{
         display: "flex", gap: 0,
         borderBottom: "1px solid var(--c-border)",
         overflowX: "auto",
@@ -422,7 +447,7 @@ export default function DashboardPage() {
             )}
           </button>
         ))}
-      </div>
+      </div>}
       </div>{/* end fixed header */}
 
       {/* ══ SCROLLABLE LIST ══ */}

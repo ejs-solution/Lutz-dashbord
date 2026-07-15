@@ -59,10 +59,10 @@ export default function CRMPage() {
           <div style={{ width: 32, height: 32, borderRadius: 9, background: "rgba(212,176,119,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Users size={17} style={{ color: "var(--c-accent)" }} />
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 900, letterSpacing: -0.4, color: "var(--c-fg)", margin: 0 }}>Kunden</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: -0.5, color: "var(--c-fg)", margin: 0 }}>Kundenkartei</h1>
         </div>
-        <p style={{ fontSize: 13, color: "var(--c-fg-subtle)", margin: 0 }}>
-          {loading ? "Lädt…" : `${custs.length} Kund${custs.length === 1 ? "e" : "en"} aus echten Buchungen`}
+        <p style={{ fontSize: 13.5, color: "var(--c-fg-subtle)", margin: 0 }}>
+          {loading ? "Lädt…" : custs.length === 0 ? "Noch keine Kund:innen" : `${custs.length} Kund${custs.length === 1 ? "e" : "en"} · alle aus deinen Terminen`}
         </p>
       </motion.div>
 
