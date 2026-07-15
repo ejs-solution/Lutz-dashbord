@@ -98,8 +98,8 @@ function NavSection({ label, items, pathname, hrefTransform }: {
 }) {
   const xfm = hrefTransform ?? ((h: string) => h);
   return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-fg-subtle)", padding: "0 10px", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.6 }}>
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-fg-faint)", padding: "0 12px", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.9 }}>
         {label}
       </div>
       {items.map(item => {
@@ -107,17 +107,15 @@ function NavSection({ label, items, pathname, hrefTransform }: {
         const active = !item.disabled && isActive(resolvedHref, pathname);
         const row = (
           <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            height: 32, padding: "0 10px", borderRadius: 6,
-            borderLeft: active ? "2px solid var(--c-accent)" : "2px solid transparent",
-            paddingLeft: active ? 8 : 10,
-            background: active ? "var(--c-bg-subtle)" : "transparent",
+            display: "flex", alignItems: "center", gap: 10,
+            height: 36, padding: "0 11px", borderRadius: 9,
+            background: active ? "var(--c-accent-bg)" : "transparent",
             opacity: item.disabled ? 0.35 : 1,
             cursor: item.disabled ? "default" : "pointer",
-            transition: "background 0.12s",
+            transition: "background 0.14s",
           }}>
-            <item.icon size={14} strokeWidth={1.6} style={{ color: active ? "var(--c-fg)" : "var(--c-fg-subtle)", flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 13, fontWeight: active ? 500 : 400, color: active ? "var(--c-fg)" : "var(--c-fg-muted)", whiteSpace: "nowrap" }}>
+            <item.icon size={16} strokeWidth={1.9} style={{ color: active ? "var(--c-accent)" : "var(--c-fg-muted)", flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: 13.5, fontWeight: active ? 600 : 500, color: active ? "var(--c-fg)" : "var(--c-fg-muted)", whiteSpace: "nowrap" }}>
               {item.label}
             </span>
             {item.badge != null && item.badge > 0 && (
@@ -136,7 +134,7 @@ function NavSection({ label, items, pathname, hrefTransform }: {
         }
         return (
           <Link key={resolvedHref} href={resolvedHref} style={{ display: "block", textDecoration: "none", marginBottom: 1 }}>
-            <motion.div whileHover={!active ? { backgroundColor: "var(--c-bg-subtle)" } : {}} style={{ borderRadius: 6 }}>
+            <motion.div whileHover={!active ? { backgroundColor: "var(--c-bg-subtle)" } : {}} style={{ borderRadius: 9 }}>
               {row}
             </motion.div>
           </Link>
@@ -847,17 +845,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         style={{
           width: 220, flexShrink: 0, flexDirection: "column",
           background: "var(--c-bg-elevated)", borderRight: "1px solid var(--c-border)",
-          position: "sticky", top: 0, height: "100dvh", overflow: "hidden",
+          position: "sticky", top: 0, height: "100dvh", overflowY: "auto",
         }}
       >
-        {/* Logo (klein, nur Branding) */}
-        <div style={{ padding: "10px 16px 8px", borderBottom: "1px solid var(--c-border)", display: "flex", alignItems: "center", gap: 7 }}>
-          <div style={{ width: 20, height: 20, borderRadius: 5, background: "var(--c-accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Zap size={10} color="var(--c-accent-fg)" strokeWidth={2.5} />
+        {/* Logo */}
+        <div style={{ padding: "14px 16px 13px", borderBottom: "1px solid var(--c-border)", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, var(--c-accent), #e8cfa0)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(212,176,119,0.28)" }}>
+            <Scissors size={15} color="#2a1f12" strokeWidth={2.4} />
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-subtle)", textTransform: "uppercase", letterSpacing: 0.5 }}>
-            Cutz Solution
-          </span>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--c-fg)", letterSpacing: -0.2 }}>CUTZ</span>
+            <span style={{ fontSize: 8.5, fontWeight: 700, color: "var(--c-fg-muted)", textTransform: "uppercase", letterSpacing: 1.5 }}>Solution</span>
+          </div>
         </div>
 
         {/* ── Benutzer oben links ── */}
@@ -876,85 +875,47 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "14px 8px 0" }}>
+        <nav style={{ flex: 1, padding: "14px 8px 4px" }}>
           <NavSection label="Workspace"     items={WORKSPACE} pathname={pathname} hrefTransform={navHref} />
           <NavSection label="Analyse"       items={ANALYSE}   pathname={pathname} hrefTransform={navHref} />
           <NavSection label="Konfiguration" items={CONFIG}    pathname={pathname} hrefTransform={navHref} />
         </nav>
 
-        {/* Beta Modus toggle — hidden in showroom */}
-        {!showroom && <div style={{ padding: "0 8px 6px" }}>
-          <button
-            onClick={toggleBeta}
-            title={betaMode ? "Beta-Modus aktiv – Beispieldaten werden angezeigt" : "Beta-Modus deaktiviert – Echte Daten"}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 8,
-              padding: "8px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-              fontFamily: "inherit", transition: "all 0.18s",
-              background: betaMode ? "rgba(212,176,119,0.13)" : "var(--c-bg-subtle)",
-              outline: betaMode ? "1px solid rgba(212,176,119,0.4)" : "1px solid var(--c-border)",
-            }}
-          >
-            <span style={{
-              width: 28, height: 16, borderRadius: 8, flexShrink: 0, position: "relative",
-              background: betaMode ? "var(--c-accent)" : "var(--c-bg-strong)",
-              transition: "background 0.2s",
-              display: "inline-block",
-            }}>
-              <span style={{
-                position: "absolute", top: 2, left: betaMode ? 14 : 2,
-                width: 12, height: 12, borderRadius: "50%",
-                background: betaMode ? "var(--c-accent-fg)" : "var(--c-fg-subtle)",
-                transition: "left 0.2s",
-              }} />
-            </span>
-            <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: betaMode ? "var(--c-accent)" : "var(--c-fg-muted)", textAlign: "left" }}>
-              Beta-Modus
-            </span>
-            {betaMode && (
-              <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 5px", borderRadius: 3, background: "rgba(212,176,119,0.2)", color: "var(--c-accent)", letterSpacing: 0.3 }}>
-                DEMO
-              </span>
-            )}
-          </button>
-        </div>}
-
-        {/* Paul status */}
-        <div style={{ padding: "0 8px 6px" }}>
-          <div style={{ background: "var(--c-bg-subtle)", border: "1px solid var(--c-border)", borderRadius: 8, padding: "10px 12px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              <PaulPulse />
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-fg)", flex: 1 }}>Paul · KI-Agent</span>
-              <span style={{ fontSize: 9, fontWeight: 700, color: "var(--c-success)" }}>ONLINE</span>
+        {/* ── Footer (kompakt, gepinnt — wird nicht mehr abgeschnitten) ── */}
+        <div style={{ flexShrink: 0, marginTop: 6, borderTop: "1px solid var(--c-border)", padding: "10px 10px 12px" }}>
+          {/* Paul – schlank */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "var(--c-bg-subtle)", borderRadius: 10, marginBottom: 8 }}>
+            <PaulPulse />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-fg)" }}>Paul</div>
+              <div style={{ fontSize: 10.5, color: "var(--c-fg-muted)" }}>antwortet automatisch</div>
             </div>
-            <div style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>Beantwortet Anfragen automatisch</div>
+            <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.4, color: "var(--c-success)", background: "rgba(34,197,94,0.12)", padding: "2px 6px", borderRadius: 5 }}>ONLINE</span>
           </div>
-        </div>
 
-        {/* Support button — hidden in showroom */}
-        {!showroom && <div style={{ padding: "0 8px 14px" }}>
-          <button
-            onClick={() => setShowSupport(true)}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 8,
-              padding: "8px 12px", borderRadius: 8,
-              border: "1px solid var(--c-border)", background: "transparent",
-              color: "var(--c-fg-muted)", fontSize: 12, fontWeight: 500,
-              cursor: "pointer", fontFamily: "inherit", transition: "all 0.14s",
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--c-bg-subtle)"; (e.currentTarget as HTMLElement).style.color = "var(--c-fg)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--c-fg-muted)"; }}
-          >
-            <HelpCircle size={14} />
-            <span>Support kontaktieren</span>
-          </button>
-        </div>}
+          {!showroom && (
+            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+              <button
+                onClick={() => setShowSupport(true)}
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 10px", borderRadius: 9, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-fg-muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+              >
+                <HelpCircle size={13} /> Support
+              </button>
+              <button
+                onClick={toggleBeta}
+                title={betaMode ? "Beispieldaten aktiv" : "Echte Daten"}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 11px", borderRadius: 9, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, border: `1px solid ${betaMode ? "rgba(212,176,119,0.45)" : "var(--c-border)"}`, background: betaMode ? "var(--c-accent-bg)" : "transparent", color: betaMode ? "var(--c-accent)" : "var(--c-fg-muted)" }}
+              >
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: betaMode ? "var(--c-accent)" : "var(--c-fg-faint)" }} /> Demo
+              </button>
+            </div>
+          )}
 
-        {/* Legal links */}
-        <div style={{ padding: "0 12px 12px", display: "flex", gap: 10, justifyContent: "center" }}>
-          <Link href="/impressum" style={{ fontSize: 10, color: "var(--c-fg-faint)", textDecoration: "none" }}>Impressum</Link>
-          <span style={{ fontSize: 10, color: "var(--c-fg-faint)" }}>·</span>
-          <Link href="/datenschutz" style={{ fontSize: 10, color: "var(--c-fg-faint)", textDecoration: "none" }}>Datenschutz</Link>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <Link href="/impressum" style={{ fontSize: 10, color: "var(--c-fg-faint)", textDecoration: "none" }}>Impressum</Link>
+            <span style={{ fontSize: 10, color: "var(--c-fg-faint)" }}>·</span>
+            <Link href="/datenschutz" style={{ fontSize: 10, color: "var(--c-fg-faint)", textDecoration: "none" }}>Datenschutz</Link>
+          </div>
         </div>
       </aside>
 
