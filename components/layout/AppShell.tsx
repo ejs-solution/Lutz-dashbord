@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import NotificationToaster from "@/components/dashboard/NotificationToaster";
+import BottomDock from "@/components/layout/BottomDock";
 import {
   LayoutDashboard, Inbox, CalendarDays, Users, Settings,
   BarChart2, FileText, Link2, Scissors, Search,
   Sun, Moon, Zap, UserSquare2, LogOut, ChevronUp,
   HelpCircle, Send, X, Crown, Camera, Bell, MessageCircle,
-  Clock, RefreshCw, type LucideIcon,
+  Clock, RefreshCw, PanelLeft, type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useBeta } from "@/lib/beta-context";
@@ -822,6 +823,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pageLabel     = usePageLabel(pathname);
   const [showSupport, setShowSupport] = useState(false);
   const [showDrawer,  setShowDrawer]  = useState(false);
+  const [collapsed,   setCollapsed]   = useState(false);
   const { betaMode, toggleBeta } = useBeta();
   // Detect showroom from URL — ShowroomProvider lives below AppShell in the tree
   const showroom = pathname.startsWith("/demo");
@@ -846,6 +848,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           width: 220, flexShrink: 0, flexDirection: "column",
           background: "var(--c-bg-elevated)", borderRight: "1px solid var(--c-border)",
           position: "sticky", top: 0, height: "100dvh", overflowY: "auto",
+          display: collapsed ? "none" : undefined,
         }}
       >
         {/* Logo */}
@@ -931,6 +934,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             position: "sticky", top: 0, zIndex: 40,
           }}
         >
+          <button onClick={() => setCollapsed(v => !v)} title={collapsed ? "Menü einblenden" : "Menü ausblenden"} className="btn-icon" style={{ marginLeft: -6, flexShrink: 0 }} aria-label="Menü ein-/ausklappen">
+            <PanelLeft size={16} style={{ color: "var(--c-fg-subtle)" }} />
+          </button>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-fg)", lineHeight: 1.2 }}>{pageLabel}</div>
             <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", lineHeight: 1.2, marginTop: 1 }}>{today}</div>
@@ -1088,6 +1094,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Waitlist notification banner */}
       <WaitlistBanner enabled={betaMode} />
       {!showroom && <NotificationToaster />}
+      {!showroom && <BottomDock />}
 
       {/* Support modal */}
       <AnimatePresence>

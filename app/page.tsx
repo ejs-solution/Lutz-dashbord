@@ -340,7 +340,7 @@ export default function DashboardPage() {
   }, [sortedAppts, betaMode]);
 
   return (
-    <div style={{ maxWidth: 680, margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100dvh - 48px)", overflow: "hidden" }}>
+    <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100dvh - 48px)", overflow: "hidden" }}>
 
       {/* ══ FIXED HEADER (never scrolls) ══ */}
       <div style={{ flexShrink: 0 }}>
@@ -361,8 +361,8 @@ export default function DashboardPage() {
         }, {
           value: loading ? "–" : String(openDeposits), label: "offen", href: null, icon: Clock,
         }] as { value: string; label: string; href: string | null; icon: LucideIcon }[]).map(({ value, label, href, icon: Icon }) => {
-          const content = (<><div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 7, color: href ? "var(--c-accent)" : "var(--c-fg-muted)" }}><Icon size={13} strokeWidth={2} /><span style={{ fontSize: 11.5, fontWeight: 600 }}>{label}</span>{href && <ChevronRight size={11} style={{ marginLeft: "auto" }} />}</div><div style={{ fontSize: 26, fontWeight: 800, color: "var(--c-fg)", fontVariantNumeric: "tabular-nums", letterSpacing: -0.5, lineHeight: 1 }}>{value}</div></>);
-          const s: React.CSSProperties = { padding: "13px 14px", background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)", borderRadius: 13, textAlign: "left" };
+          const content = (<><div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, color: href ? "var(--c-accent)" : "var(--c-fg-muted)" }}><Icon size={16} strokeWidth={2} /><span style={{ fontSize: 13.5, fontWeight: 600 }}>{label}</span>{href && <ChevronRight size={14} style={{ marginLeft: "auto" }} />}</div><div style={{ fontSize: 34, fontWeight: 800, color: "var(--c-fg)", fontVariantNumeric: "tabular-nums", letterSpacing: -0.5, lineHeight: 1 }}>{value}</div></>);
+          const s: React.CSSProperties = { padding: "20px 22px", background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)", borderRadius: 15, textAlign: "left" };
           return href ? <Link key={label} href={href} style={{ ...s, textDecoration: "none", display: "block" }}>{content}</Link> : <div key={label} style={s}>{content}</div>;
         })}
       </div>
