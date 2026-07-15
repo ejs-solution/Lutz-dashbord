@@ -6,6 +6,7 @@ import { AlertTriangle, X, RefreshCw, ChevronRight, Ban, CalendarDays, TrendingU
 import Link from "next/link";
 import { useBeta } from "@/lib/beta-context";
 import { todayAppointments } from "@/lib/mock-data";
+import DashboardExtras from "@/components/dashboard/DashboardExtras";
 
 /* ─── Types ──────────────────────────────────────────────── */
 type Appt = {
@@ -511,6 +512,9 @@ export default function DashboardPage() {
             />
           );
         })}
+
+        {/* Wochen-Überblick, nächste Termine, hilfreiche Aktionen */}
+        {!loading && !error && <DashboardExtras />}
 
         {/* Bottom padding for mobile nav */}
         <div style={{ height: 24 }} />
