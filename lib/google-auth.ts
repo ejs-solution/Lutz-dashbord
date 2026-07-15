@@ -97,6 +97,8 @@ export function buildAuthUrl(state?: string) {
     scope: [
       "https://www.googleapis.com/auth/calendar.readonly",
       "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.modify",  // als gelesen markieren / archivieren
+      "https://www.googleapis.com/auth/gmail.send",    // Antworten senden (Paul)
       "email",
       "profile",
     ].join(" "),

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Phone, Mail, AtSign,
   UserCheck, Play, Send, ChevronLeft, Zap, RefreshCw, ExternalLink,
+  CalendarPlus, Loader2, X, Check,
 } from "lucide-react";
 import { conversations, type Conversation } from "@/lib/mock-data";
 import { useBeta } from "@/lib/beta-context";
@@ -52,6 +53,10 @@ function formatDate(ts: string) {
     ? d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
     : d.toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
 }
+const TERMIN_RE = /termin|anfrage|buchung|reservier|appointment|booking/i;
+const NOISE_RE  = /facebook|instagram|linkedin|no-?reply|noreply|notification|newsletter|mailer-daemon|google\b/i;
+const isTerminReq = (m: GmailMessage) => TERMIN_RE.test(`${m.subject} ${m.snippet}`);
+const isNoise     = (m: GmailMessage) => NOISE_RE.test(m.from);
 
 /* ─── Shared avatar ──────────────────────────────────────── */
 function Av({ name, size = 40, fs = 14, unread = 0 }: { name: string; size?: number; fs?: number; unread?: number }) {
@@ -101,45 +106,149 @@ function GmailCard({ msg, selected, onClick, delay }: { msg: GmailMessage; selec
 }
 
 /* ─── Gmail detail ───────────────────────────────────────── */
-function GmailDetail({ msg, onBack }: { msg: GmailMessage; onBack: () => void }) {
+function GmailDetail({ msg, onBack, onCreated }: { msg: GmailMessage; onBack: () => void; onCreated: () => void }) {
   const { name, email } = parseFrom(msg.from);
   const gmailUrl = `https://mail.google.com/mail/u/0/#inbox/${msg.threadId}`;
+  const [body, setBody] = useState<string | null>(null);
+  const [bodyLoading, setBodyLoading] = useState(true);
+  const [showAppt, setShowAppt] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setBody(null); setBodyLoading(true);
+    fetch(`/api/gmail/message?id=${msg.id}`)
+      .then(r => r.json())
+      .then(d => { if (active) setBody((d.body && d.body.trim()) || msg.snippet || "(kein Inhalt)"); })
+      .catch(() => { if (active) setBody(msg.snippet || "(kein Inhalt)"); })
+      .finally(() => { if (active) setBodyLoading(false); });
+    return () => { active = false; };
+  }, [msg.id, msg.snippet]);
+
   return (
     <>
-      <div style={{ padding: "14px 18px", background: "var(--surface)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ padding: "12px 18px", background: "var(--surface)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <button className="md:hidden btn-ghost" style={{ padding: "6px 8px", marginRight: -4 }} onClick={onBack}><ChevronLeft size={18} /></button>
         <Av name={name} size={38} fs={13} />
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 140 }}>
           <span style={{ fontWeight: 800, fontSize: 15, color: "var(--text)" }}>{name}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
             <span className="ch-email" style={{ display: "flex" }}><Mail size={12} /></span>
-            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Gmail · {email}</span>
+            <span style={{ fontSize: 12, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{email}</span>
           </div>
         </div>
-        <a href={gmailUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, background: "var(--accent)", color: "#0a0a18", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
-          <ExternalLink size={13} /> Gmail öffnen
+        <button onClick={() => setShowAppt(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 10, background: "linear-gradient(135deg, var(--c-accent), #e8cfa0)", color: "#2a1f12", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer" }}>
+          <CalendarPlus size={14} /> Als Termin anlegen
+        </button>
+        <a href={gmailUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 10, background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+          <ExternalLink size={13} /> Gmail
         </a>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 4 }}>{name} · {formatDate(msg.date)}</div>
-          <div className="bubble-customer" style={{ maxWidth: "80%" }}>
-            <div style={{ fontWeight: 700, marginBottom: 6, fontSize: 13 }}>{msg.subject || "(kein Betreff)"}</div>
-            <div style={{ fontSize: 13, lineHeight: 1.6 }}>{msg.snippet}</div>
-          </div>
-        </motion.div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "22px 20px" }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text)", marginBottom: 4 }}>{msg.subject || "(kein Betreff)"}</div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 18 }}>{name} · {formatDate(msg.date)}</div>
+        {bodyLoading ? (
+          <div style={{ padding: 30, display: "flex", justifyContent: "center" }}><Loader2 size={22} className="spin" style={{ color: "var(--accent)" }} /></div>
+        ) : (
+          <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{body}</div>
+        )}
       </div>
-      <div style={{ padding: "12px 18px", background: "var(--surface)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "center" }}>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--surface-2)", borderRadius: 12, border: "1px solid var(--border)" }}>
-          <Mail size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />
-          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
-            Im Gmail antworten →{" "}
-            <a href={gmailUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontWeight: 700, textDecoration: "none" }}>Antwort schreiben</a>
-          </span>
-        </div>
-      </div>
+
+      <AnimatePresence>
+        {showAppt && <NewApptFromMail name={name} email={email} onClose={() => setShowAppt(false)} onCreated={() => { setShowAppt(false); onCreated(); }} />}
+      </AnimatePresence>
+      <style>{`.spin{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}`}</style>
     </>
   );
+}
+
+/* ─── Termin aus Mail anlegen ────────────────────────────── */
+const EMP_OPTIONS = ["Unbesetzt", "Aynur", "Monika", "Lisa"];
+function NewApptFromMail({ name, email, onClose, onCreated }: { name: string; email: string; onClose: () => void; onCreated: () => void }) {
+  const [customer, setCustomer] = useState(name);
+  const [phone, setPhone] = useState("");
+  const [service, setService] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("10:00");
+  const [duration, setDuration] = useState("60");
+  const [price, setPrice] = useState("");
+  const [employee, setEmployee] = useState("Unbesetzt");
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save() {
+    if (!customer.trim() || !service.trim() || !date || !time) { setErr("Bitte Name, Service, Datum und Uhrzeit angeben."); return; }
+    setSaving(true); setErr(null);
+    try {
+      const r = await fetch("/api/appointments", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: customer.trim(), customerPhone: phone.trim() || undefined,
+          service: service.trim(), employee, date, startTime: time,
+          duration: Number(duration) || 60, totalAmount: Number(price) || 0,
+          status: "confirmed", channel: "email", notes: email ? `E-Mail: ${email}` : undefined,
+        }),
+      });
+      if (!r.ok) { setErr("Speichern fehlgeschlagen."); return; }
+      setDone(true); setTimeout(onCreated, 1100);
+    } catch { setErr("Netzwerkfehler."); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", zIndex: 700 }} />
+      <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
+        transition={{ type: "spring", stiffness: 330, damping: 28 }}
+        style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 701, width: "min(440px, calc(100vw - 32px))", maxHeight: "88vh", overflowY: "auto", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
+        <div style={{ height: 4, background: "linear-gradient(90deg, var(--c-accent), #e8cfa0)", borderRadius: "18px 18px 0 0" }} />
+        <div style={{ padding: 20 }}>
+          {done ? (
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <div style={{ width: 58, height: 58, borderRadius: 18, background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}><Check size={30} color="#fff" strokeWidth={3} /></div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text)" }}>Termin angelegt</div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>Er erscheint jetzt im Kalender.</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text)" }}>Termin aus Mail</div>
+                <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}><X size={18} /></button>
+              </div>
+              {err && <div style={{ padding: "9px 12px", background: "rgba(239,68,68,0.1)", border: "1px solid var(--red)", borderRadius: 9, color: "var(--red)", fontSize: 12.5, marginBottom: 12 }}>{err}</div>}
+              <div style={{ display: "grid", gap: 11 }}>
+                <Field label="Kunde *"><input value={customer} onChange={e => setCustomer(e.target.value)} style={inp} /></Field>
+                <Field label="Telefon"><input value={phone} onChange={e => setPhone(e.target.value)} style={inp} inputMode="tel" placeholder="Optional" /></Field>
+                <Field label="Dienstleistung *"><input value={service} onChange={e => setService(e.target.value)} style={inp} placeholder="z. B. Herrenhaarschnitt" list="svc-list" /></Field>
+                <datalist id="svc-list"><option value="Herrenhaarschnitt" /><option value="Damenhaarschnitt" /><option value="Haarschnitt + Bart" /><option value="Färben" /><option value="Strähnen" /><option value="Bart" /></datalist>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+                  <Field label="Datum *"><input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} /></Field>
+                  <Field label="Uhrzeit *"><input type="time" value={time} onChange={e => setTime(e.target.value)} style={inp} /></Field>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11 }}>
+                  <Field label="Dauer (Min)"><input value={duration} onChange={e => setDuration(e.target.value)} style={inp} inputMode="numeric" /></Field>
+                  <Field label="Preis (€)"><input value={price} onChange={e => setPrice(e.target.value)} style={inp} inputMode="numeric" placeholder="0" /></Field>
+                </div>
+                <Field label="Mitarbeiter:in"><select value={employee} onChange={e => setEmployee(e.target.value)} style={inp}>{EMP_OPTIONS.map(e => <option key={e} value={e}>{e}</option>)}</select></Field>
+              </div>
+              <button disabled={saving} onClick={save} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", marginTop: 18, padding: 13, background: "linear-gradient(135deg, var(--c-accent), #e8cfa0)", color: "#2a1f12", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>
+                {saving ? <Loader2 size={17} className="spin" /> : <Check size={17} />} Termin anlegen
+              </button>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </>
+  );
+}
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <label style={{ display: "block" }}><span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>{label}</span>{children}</label>
+);
+const inp: React.CSSProperties = { width: "100%", padding: "9px 11px", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 9, color: "var(--text)", fontSize: 14, fontFamily: "inherit" };
+function chip(on: boolean): React.CSSProperties {
+  return { padding: "5px 11px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`, background: on ? "var(--accent-glow)" : "transparent", color: on ? "var(--accent)" : "var(--text-muted)" };
 }
 
 /* ─── Chat view (right panel for conversations) ──────────── */
@@ -225,6 +334,8 @@ export default function InboxPage() {
   const [gmailLoading, setGmailLoading]   = useState(false);
   const [gmailError, setGmailError]       = useState<string | null>(null);
   const [selectedMail, setSelectedMail]   = useState<GmailMessage | null>(null);
+  const [gmailFilter, setGmailFilter]     = useState<"alle" | "ungelesen" | "termin">("alle");
+  const [hideNoise, setHideNoise]         = useState(true);
 
   // Switch to demo channel when betaMode becomes active
   useEffect(() => {
@@ -297,6 +408,13 @@ export default function InboxPage() {
   const showConvos = betaMode && activeChannel !== "gmail";
   const showGmail  = activeChannel === "gmail" && !betaMode;
   const showGmailBeta = betaMode && activeChannel === "gmail";
+
+  const visibleMessages = gmailMessages.filter(m => {
+    if (hideNoise && isNoise(m)) return false;
+    if (gmailFilter === "ungelesen" && !m.unread) return false;
+    if (gmailFilter === "termin" && !isTerminReq(m)) return false;
+    return true;
+  });
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: 0, height: "calc(100vh - 52px)" }} className="md:h-[calc(100vh-0px)]">
@@ -392,25 +510,39 @@ export default function InboxPage() {
 
           {/* Live: Gmail list */}
           {(showGmail || showGmailBeta) && (
-            gmailLoading ? (
-              <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                {[1,2,3,4,5].map(n => <div key={n} className="skeleton" style={{ height: 72, borderRadius: 10 }} />)}
-              </div>
-            ) : gmailError === "not_connected" ? (
-              <div style={{ padding: 24, textAlign: "center" }}>
-                <Mail size={28} style={{ color: "var(--text-muted)", margin: "0 auto 10px" }} />
-                <p style={{ fontWeight: 700, color: "var(--text)", marginBottom: 6, fontSize: 14 }}>Gmail nicht verbunden</p>
-                <a href="/integrations" className="btn-gold" style={{ display: "inline-flex", fontSize: 13 }}>Integrationen</a>
-              </div>
-            ) : gmailError ? (
-              <div style={{ padding: 16, fontSize: 12, color: "var(--red)" }}>Fehler: {gmailError}</div>
-            ) : gmailMessages.length === 0 ? (
-              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Keine E-Mails gefunden.</div>
-            ) : (
-              gmailMessages.map((msg, i) => (
-                <GmailCard key={msg.id} msg={msg} delay={i * 0.04} selected={selectedMail?.id === msg.id} onClick={() => { setSelectedMail(msg); setShowMobile(true); }} />
-              ))
-            )
+            <>
+              {/* Filter-Chips */}
+              {!gmailLoading && !gmailError && gmailMessages.length > 0 && (
+                <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "10px 12px", borderBottom: "1px solid var(--border)", flexWrap: "wrap", position: "sticky", top: 0, background: "var(--surface)", zIndex: 2 }}>
+                  {(["alle", "ungelesen", "termin"] as const).map(k => {
+                    const on = gmailFilter === k;
+                    const label = k === "alle" ? "Alle" : k === "ungelesen" ? "Ungelesen" : "Terminanfragen";
+                    return <button key={k} onClick={() => setGmailFilter(k)} style={chip(on)}>{label}</button>;
+                  })}
+                  <button onClick={() => setHideNoise(v => !v)} title="Facebook/Google-Benachrichtigungen ausblenden" style={{ ...chip(hideNoise), marginLeft: "auto" }}>{hideNoise ? "Rauschen aus" : "Alles zeigen"}</button>
+                </div>
+              )}
+
+              {gmailLoading ? (
+                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[1,2,3,4,5].map(n => <div key={n} className="skeleton" style={{ height: 72, borderRadius: 10 }} />)}
+                </div>
+              ) : gmailError === "not_connected" ? (
+                <div style={{ padding: 24, textAlign: "center" }}>
+                  <Mail size={28} style={{ color: "var(--text-muted)", margin: "0 auto 10px" }} />
+                  <p style={{ fontWeight: 700, color: "var(--text)", marginBottom: 6, fontSize: 14 }}>Gmail nicht verbunden</p>
+                  <a href="/integrations" className="btn-gold" style={{ display: "inline-flex", fontSize: 13 }}>Integrationen</a>
+                </div>
+              ) : gmailError ? (
+                <div style={{ padding: 16, fontSize: 12, color: "var(--red)" }}>Fehler: {gmailError}</div>
+              ) : visibleMessages.length === 0 ? (
+                <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>{gmailMessages.length === 0 ? "Keine E-Mails gefunden." : "Keine Treffer für diesen Filter."}</div>
+              ) : (
+                visibleMessages.map((msg, i) => (
+                  <GmailCard key={msg.id} msg={msg} delay={i * 0.04} selected={selectedMail?.id === msg.id} onClick={() => { setSelectedMail(msg); setShowMobile(true); }} />
+                ))
+              )}
+            </>
           )}
         </div>
 
@@ -429,7 +561,7 @@ export default function InboxPage() {
 
           {/* Gmail detail */}
           {(showGmail || showGmailBeta) && selectedMail ? (
-            <GmailDetail msg={selectedMail} onBack={() => setShowMobile(false)} />
+            <GmailDetail msg={selectedMail} onBack={() => setShowMobile(false)} onCreated={() => { setSelectedMail(null); loadGmail(); }} />
           ) : (showGmail || showGmailBeta) && !selectedMail ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
               <Mail size={40} style={{ color: "var(--text-muted)" }} />
