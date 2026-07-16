@@ -1094,7 +1094,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Waitlist notification banner */}
       <WaitlistBanner enabled={betaMode} />
       {!showroom && <NotificationToaster />}
-      {!showroom && <BottomDock />}
+      {!showroom && <BottomDock collapsed={collapsed} />}
 
       {/* Support modal */}
       <AnimatePresence>

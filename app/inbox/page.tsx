@@ -618,9 +618,20 @@ export default function InboxPage() {
           {(showGmail || showGmailBeta) && selectedMail ? (
             <GmailDetail msg={selectedMail} onBack={() => setShowMobile(false)} onCreated={() => { setSelectedMail(null); loadGmail(); }} />
           ) : (showGmail || showGmailBeta) && !selectedMail ? (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
-              <Mail size={40} style={{ color: "var(--text-muted)" }} />
-              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>E-Mail auswählen</p>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16, padding: 24, textAlign: "center" }}>
+              <div style={{ width: 66, height: 66, borderRadius: 18, background: "var(--accent-glow)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Mail size={30} style={{ color: "var(--accent)" }} />
+              </div>
+              <div>
+                <p style={{ color: "var(--text)", fontSize: 16, fontWeight: 700, marginBottom: 5 }}>Wähle eine E-Mail aus</p>
+                <p style={{ color: "var(--text-muted)", fontSize: 13.5, maxWidth: 330, lineHeight: 1.55, margin: "0 auto" }}>Öffne eine Nachricht, um sie zu lesen, direkt <strong style={{ color: "var(--text)" }}>als Termin anzulegen</strong> oder <strong style={{ color: "var(--accent)" }}>mit Paul zu antworten</strong>.</p>
+              </div>
+              {gmailMessages.length > 0 && (
+                <div style={{ display: "flex", gap: 24, marginTop: 6 }}>
+                  <div><div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>{gmailMessages.filter(m => m.unread).length}</div><div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>ungelesen</div></div>
+                  <div><div style={{ fontSize: 22, fontWeight: 800, color: "var(--accent)" }}>{gmailMessages.filter(isTerminReq).length}</div><div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>Terminanfragen</div></div>
+                </div>
+              )}
             </div>
           ) : null}
         </div>

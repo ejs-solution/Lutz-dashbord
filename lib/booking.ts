@@ -192,7 +192,19 @@ async function dayWindow(tenantId: string, dateStr: string) {
     .select("employee, start_time, end_time")
     .eq("tenant_id", tenantId)
     .eq("weekday", weekday);
-  if (wh && wh.length > 0) return windowFrom(wh as WindowRow[]);
+  if (wh && wh.length > 0) {
+    // Urlaub/Abwesenheiten an diesem Tag herausrechnen.
+    const { data: abs } = await supabase
+      .from("absences")
+      .select("employee")
+      .eq("tenant_id", tenantId)
+      .lte("from_date", dateStr)
+      .gte("to_date", dateStr);
+    const absent = new Set((abs ?? []).map((x) => x.employee));
+    const avail = (wh as WindowRow[]).filter((w) => !absent.has(w.employee));
+    if (avail.length === 0) return null; // alle abwesend → geschlossen
+    return windowFrom(avail);
+  }
 
   // 3. Fallback: Standard-Öffnungszeiten.
   const def = DEFAULT_OPEN[weekday];

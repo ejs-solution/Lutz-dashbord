@@ -10,6 +10,7 @@ import {
 import { todayAppointments, type Appointment } from "@/lib/mock-data";
 import { SERVICE_CATALOG } from "@/lib/services-catalog";
 import { useBeta } from "@/lib/beta-context";
+import ShiftsPanel from "@/components/dashboard/ShiftsPanel";
 
 /* ─── Types ──────────────────────────────────────────────────── */
 export type ApptWithDate = Appointment & { date: string };
@@ -203,9 +204,9 @@ function DayView({
             <div key={emp} style={{ padding: "10px 8px", borderLeft: "1px solid var(--c-border)", textAlign: "center" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: c.border, display: "inline-block" }} />
-                <span style={{ fontWeight: 700, fontSize: 13, color: "var(--c-fg)" }}>{emp}</span>
+                <span style={{ fontWeight: 800, fontSize: 15.5, color: "var(--c-fg)" }}>{emp}</span>
               </div>
-              <div style={{ fontSize: 10, color: "var(--c-fg-subtle)", marginTop: 2 }}>{count} Termine</div>
+              <div style={{ fontSize: 11.5, color: "var(--c-fg-subtle)", marginTop: 3 }}>{count} Termine</div>
             </div>
           );
         })}
@@ -1003,6 +1004,7 @@ export default function KalenderPage() {
         {mainView === "schichten" ? (
           <motion.div key="schichten" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
             <SchichtenView dates={wDates} />
+            <div style={{ marginTop: 28 }}><ShiftsPanel /></div>
           </motion.div>
         ) : calView === "day" ? (
           <motion.div key="day" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>

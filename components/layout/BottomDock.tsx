@@ -16,7 +16,7 @@ const ITEMS = [
 
 // Schwebender, mittiger Dock auf dem Desktop — erscheint, wenn die Maus nach unten geht,
 // und verschwindet wieder, wenn sie sich entfernt.
-export default function BottomDock() {
+export default function BottomDock({ collapsed = false }: { collapsed?: boolean }) {
   const pathname = usePathname();
   const [show, setShow] = useState(false);
 
@@ -28,8 +28,9 @@ export default function BottomDock() {
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
+  // Über dem Inhaltsbereich zentrieren: bei ausgeklappter Sidebar (220px) nach rechts versetzt.
   return (
-    <div className="hidden md:block" style={{ position: "fixed", left: 0, right: 0, bottom: 0, height: 96, zIndex: 60, pointerEvents: "none" }}>
+    <div className="hidden md:block" style={{ position: "fixed", left: collapsed ? 0 : 220, right: 0, bottom: 0, height: 96, zIndex: 60, pointerEvents: "none" }}>
       <AnimatePresence>
         {show && (
           <motion.div
