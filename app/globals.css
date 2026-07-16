@@ -367,6 +367,10 @@ body {
 .app-main { padding-bottom: 72px; }
 @media (min-width: 768px) { .app-main { padding-bottom: 0; } }
 
+/* Schwebender Bottom-Dock — nur Desktop, zentriert über dem Inhaltsbereich */
+.bottom-dock-wrap { position: fixed; right: 0; bottom: 0; height: 96px; z-index: 60; pointer-events: none; display: none; justify-content: center; align-items: flex-end; padding-bottom: 16px; }
+@media (min-width: 768px) { .bottom-dock-wrap { display: flex; } }
+
 .bottom-nav-item {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   padding: 10px 4px;

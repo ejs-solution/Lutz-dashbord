@@ -28,9 +28,10 @@ export default function BottomDock({ collapsed = false }: { collapsed?: boolean 
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
-  // Über dem Inhaltsbereich zentrieren: bei ausgeklappter Sidebar (220px) nach rechts versetzt.
+  // Über dem Inhaltsbereich zentrieren: Container startet nach der Sidebar (220px) und
+  // zentriert den Dock per Flexbox — zuverlässiger als absolute Positionierung.
   return (
-    <div className="hidden md:block" style={{ position: "fixed", left: collapsed ? 0 : 220, right: 0, bottom: 0, height: 96, zIndex: 60, pointerEvents: "none" }}>
+    <div className="bottom-dock-wrap" style={{ left: collapsed ? 0 : 220 }}>
       <AnimatePresence>
         {show && (
           <motion.div
@@ -40,7 +41,6 @@ export default function BottomDock({ collapsed = false }: { collapsed?: boolean 
             transition={{ type: "spring", stiffness: 340, damping: 30 }}
             onMouseLeave={() => setShow(false)}
             style={{
-              position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
               pointerEvents: "auto", display: "flex", gap: 4, padding: 6,
               background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)",
               borderRadius: 16, boxShadow: "0 14px 44px rgba(0,0,0,0.32)",
