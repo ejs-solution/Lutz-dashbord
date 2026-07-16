@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     if (!r.ok) return NextResponse.json({ error: await r.text() }, { status: r.status });
     const d = (await r.json()) as { content?: { text?: string }[] };
     const draft = (d.content?.[0]?.text ?? "").trim();
+    await supabaseAdmin.from("paul_events").insert({ tenant_id: tid, type: "draft_generated" });
     return NextResponse.json({ draft });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

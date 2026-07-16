@@ -10,6 +10,7 @@ type Analytics = {
   total: number; active: number; cancelled: number; cancelRate: number;
   onlineRate: number; last30: number; bookedHours: number;
   byChannel: { booking_page: number; email: number; phone: number; whatsapp: number; instagram: number };
+  paul: { confirmations: number; reminders: number; replies: number; drafts: number };
 };
 
 const CHANNELS: { key: keyof Analytics["byChannel"]; label: string; icon: typeof Globe; color: string }[] = [
@@ -81,26 +82,14 @@ export default function AnalyticsPage() {
             </div>
           </Section>
 
-          {/* Paul-Insights (ehrlich: noch keine Zählung) */}
-          <Section title="Paul-Insights">
+          {/* Paul-Insights — echte Zahlen */}
+          <Section title="Was Paul für dich erledigt">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
-              {[
-                { icon: Zap, label: "Automatisch beantwortet" },
-                { icon: Mail, label: "Weitergeleitete Nachrichten" },
-                { icon: TrendingUp, label: "Antwortrate" },
-                { icon: Clock, label: "Ø Antwortzeit" },
-              ].map(({ icon: Icon, label }) => (
-                <div key={label} style={{ background: "var(--c-bg-elevated)", border: "1px dashed var(--c-border)", borderRadius: 12, padding: "14px 15px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--c-fg-muted)", marginBottom: 8 }}>
-                    <Icon size={13} /><span style={{ fontSize: 12, fontWeight: 600 }}>{label}</span>
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.4, color: "var(--c-accent)", background: "var(--c-accent-bg)", padding: "3px 8px", borderRadius: 6 }}>KOMMT BALD</span>
-                </div>
-              ))}
+              <Kpi icon={Zap} label="Bestätigungen automatisch" value={String(a.paul.confirmations)} sub="Online-Buchungen bestätigt" />
+              <Kpi icon={Clock} label="Erinnerungen gesendet" value={String(a.paul.reminders)} sub="Tag vorher" />
+              <Kpi icon={Mail} label="Paul-Antworten" value={String(a.paul.replies)} sub="aus der Inbox" accent />
+              <Kpi icon={TrendingUp} label="KI-Vorschläge" value={String(a.paul.drafts)} sub="erstellt" />
             </div>
-            <p style={{ fontSize: 12, color: "var(--c-fg-muted)", marginTop: 12, lineHeight: 1.5 }}>
-              Diese Paul-Kennzahlen zeigen wir, sobald der Assistent sie erfasst — bewusst keine erfundenen Zahlen.
-            </p>
           </Section>
         </>
       )}

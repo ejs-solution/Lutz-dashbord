@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantTokens, getAccessToken } from "@/lib/google-auth";
 import { getTenantId } from "@/lib/tenant";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const b64url = (s: string) => Buffer.from(s, "utf-8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
@@ -9,7 +10,8 @@ export async function POST(req: NextRequest) {
   const { to, subject, body, threadId } = (await req.json()) as { to?: string; subject?: string; body?: string; threadId?: string };
   if (!to || !body) return NextResponse.json({ error: "missing" }, { status: 400 });
 
-  const tokens = await getTenantTokens(await getTenantId());
+  const tid = await getTenantId();
+  const tokens = await getTenantTokens(tid);
   if (!tokens.gmail_refresh_token) return NextResponse.json({ error: "not_connected" }, { status: 401 });
 
   try {
@@ -32,6 +34,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({ raw: b64url(mime), ...(threadId ? { threadId } : {}) }),
     });
     if (!r.ok) return NextResponse.json({ error: await r.text() }, { status: r.status });
+    await supabaseAdmin.from("paul_events").insert({ tenant_id: tid, type: "reply_sent" });
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

@@ -9,7 +9,7 @@ export async function GET() {
   const tid = await getTenantId();
   const { data } = await supabase
     .from("appointments")
-    .select("channel, status, date, duration")
+    .select("channel, status, date, duration, reminder_sent")
     .eq("tenant_id", tid);
 
   const rows = data ?? [];
@@ -34,8 +34,17 @@ export async function GET() {
   const cancelRate = total ? Math.round((cancelled / total) * 100) : 0;
   const bookedHours = Math.round(active.reduce((s, r) => s + (r.duration ?? 0), 0) / 6) / 10;
 
+  const { data: pe } = await supabase.from("paul_events").select("type").eq("tenant_id", tid);
+  const evc = (t: string) => (pe ?? []).filter((x) => x.type === t).length;
+  const paul = {
+    confirmations: byChannel.booking_page,                       // jede Online-Buchung von Paul bestätigt
+    reminders: active.filter((r) => r.reminder_sent).length,      // Erinnerungen versendet
+    replies: evc("reply_sent"),                                   // Antworten aus der Inbox
+    drafts: evc("draft_generated"),                               // KI-Antwortvorschläge
+  };
+
   return NextResponse.json(
-    { total, active: active.length, cancelled, cancelRate, onlineRate, last30, bookedHours, byChannel },
+    { total, active: active.length, cancelled, cancelRate, onlineRate, last30, bookedHours, byChannel, paul },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
