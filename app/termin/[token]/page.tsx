@@ -120,8 +120,8 @@ export default function TerminPage() {
           {mode === "rescheduled" && (
             <Panel k="r">
               <div style={{ textAlign: "center", padding: "10px 0" }}>
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 18 }} style={{ width: 60, height: 60, borderRadius: 18, background: "linear-gradient(135deg, var(--c-success), #16a34a)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                  <Check size={30} color="#fff" strokeWidth={3} />
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 18 }} style={{ width: 60, height: 60, borderRadius: 18, background: "linear-gradient(135deg, var(--c-accent), #B8935A)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                  <Check size={30} strokeWidth={3} style={{ color: "var(--c-accent-fg)" }} />
                 </motion.div>
                 <div style={{ fontSize: 17, fontWeight: 800 }}>Termin verschoben</div>
                 <p style={{ fontSize: 13.5, color: "var(--c-fg-muted)", marginTop: 6 }}>Neuer Termin: {longDate(d.date)} um {d.time} Uhr.</p>

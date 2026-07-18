@@ -22,28 +22,27 @@ type Customer = {
   totalVisits: number;
   favoriteService: string;
   avgSpend: number;
-  flag: string;
   avatar: string;
   color: string;
 };
 
 /* ─── Mock data ─────────────────────────────────────────────── */
 const CHURNED: Customer[] = [
-  { id: "1",  name: "Büşra Şahin",    phone: "+4917623456789", phoneDisplay: "+49 176 234 56789", lastVisit: "2026-01-08", monthsAbsent: 4, totalVisits: 14, favoriteService: "Haarpflege",        avgSpend: 62,  flag: "🇹🇷", avatar: "BŞ", color: "#10b981" },
-  { id: "2",  name: "Maria Müller",   phone: "+4916098765432", phoneDisplay: "+49 160 987 65432", lastVisit: "2025-12-15", monthsAbsent: 5, totalVisits: 22, favoriteService: "Balayage",           avgSpend: 120, flag: "🇩🇪", avatar: "MM", color: "#60a5fa" },
-  { id: "3",  name: "Emma Johnson",   phone: "+4915745678901", phoneDisplay: "+49 157 456 78901", lastVisit: "2025-11-20", monthsAbsent: 6, totalVisits: 8,  favoriteService: "Keratin-Behandlung", avgSpend: 95,  flag: "🇬🇧", avatar: "EJ", color: "#D4B077" },
-  { id: "4",  name: "Fatma Yıldız",  phone: "+4917611223344", phoneDisplay: "+49 176 112 23344", lastVisit: "2026-01-30", monthsAbsent: 4, totalVisits: 31, favoriteService: "Dauerwelle",         avgSpend: 88,  flag: "🇹🇷", avatar: "FY", color: "#f472b6" },
-  { id: "5",  name: "Sophie Wagner",  phone: "+4915212345678", phoneDisplay: "+49 152 123 45678", lastVisit: "2025-10-05", monthsAbsent: 8, totalVisits: 6,  favoriteService: "Haarschnitt",        avgSpend: 45,  flag: "🇩🇪", avatar: "SW", color: "#a78bfa" },
-  { id: "6",  name: "Zeynep Kaya",   phone: "+4917699887766", phoneDisplay: "+49 176 998 87766", lastVisit: "2026-01-14", monthsAbsent: 4, totalVisits: 19, favoriteService: "Färbung",            avgSpend: 75,  flag: "🇹🇷", avatar: "ZK", color: "#34d399" },
-  { id: "7",  name: "Laura Becker",  phone: "+4915811111222", phoneDisplay: "+49 158 111 11222", lastVisit: "2025-09-12", monthsAbsent: 9, totalVisits: 4,  favoriteService: "Highlights",         avgSpend: 110, flag: "🇩🇪", avatar: "LB", color: "#fb923c" },
-  { id: "8",  name: "Ayşe Doğan",   phone: "+4917787654321", phoneDisplay: "+49 177 876 54321", lastVisit: "2025-12-01", monthsAbsent: 6, totalVisits: 27, favoriteService: "Haarverlängerung",   avgSpend: 200, flag: "🇹🇷", avatar: "AD", color: "#818cf8" },
-  { id: "9",  name: "Mia Schneider", phone: "+4916133445566", phoneDisplay: "+49 161 334 45566", lastVisit: "2026-01-22", monthsAbsent: 4, totalVisits: 11, favoriteService: "Glättung",           avgSpend: 130, flag: "🇩🇪", avatar: "MS", color: "#f87171" },
-  { id: "10", name: "Hana Fischer",  phone: "+4917255443322", phoneDisplay: "+49 172 554 43322", lastVisit: "2025-08-30", monthsAbsent: 9, totalVisits: 7,  favoriteService: "Coloration",         avgSpend: 85,  flag: "🇩🇪", avatar: "HF", color: "#4ade80" },
-  { id: "11", name: "Nora Hoffmann", phone: "+4915077665544", phoneDisplay: "+49 150 776 65544", lastVisit: "2026-02-10", monthsAbsent: 3, totalVisits: 16, favoriteService: "Botox-Behandlung",   avgSpend: 160, flag: "🇩🇪", avatar: "NH", color: "#c084fc" },
-  { id: "12", name: "Gülay Arslan",  phone: "+4917644332211", phoneDisplay: "+49 176 443 32211", lastVisit: "2025-11-05", monthsAbsent: 7, totalVisits: 23, favoriteService: "Ombre",              avgSpend: 95,  flag: "🇹🇷", avatar: "GA", color: "#fbbf24" },
-  { id: "13", name: "Julia Richter", phone: "+4916077884455", phoneDisplay: "+49 160 778 84455", lastVisit: "2025-12-28", monthsAbsent: 5, totalVisits: 9,  favoriteService: "Toning",             avgSpend: 70,  flag: "🇩🇪", avatar: "JR", color: "#22d3ee" },
-  { id: "14", name: "Leila Schmitt", phone: "+4915299887766", phoneDisplay: "+49 152 998 87766", lastVisit: "2025-07-14", monthsAbsent: 10, totalVisits: 5, favoriteService: "Haarschnitt",        avgSpend: 48,  flag: "🇩🇪", avatar: "LS", color: "#e879f9" },
-  { id: "15", name: "Emine Çelik",  phone: "+4917633221100", phoneDisplay: "+49 176 332 21100", lastVisit: "2026-01-03", monthsAbsent: 5, totalVisits: 38, favoriteService: "Färbung + Schnitt",   avgSpend: 90,  flag: "🇹🇷", avatar: "EÇ", color: "#f59e0b" },
+  { id: "1",  name: "Büşra Şahin",    phone: "+4917623456789", phoneDisplay: "+49 176 234 56789", lastVisit: "2026-01-08", monthsAbsent: 4, totalVisits: 14, favoriteService: "Haarpflege",        avgSpend: 62, avatar: "BŞ", color: "#10b981" },
+  { id: "2",  name: "Maria Müller",   phone: "+4916098765432", phoneDisplay: "+49 160 987 65432", lastVisit: "2025-12-15", monthsAbsent: 5, totalVisits: 22, favoriteService: "Balayage",           avgSpend: 120, avatar: "MM", color: "#60a5fa" },
+  { id: "3",  name: "Emma Johnson",   phone: "+4915745678901", phoneDisplay: "+49 157 456 78901", lastVisit: "2025-11-20", monthsAbsent: 6, totalVisits: 8,  favoriteService: "Keratin-Behandlung", avgSpend: 95, avatar: "EJ", color: "#D4B077" },
+  { id: "4",  name: "Fatma Yıldız",  phone: "+4917611223344", phoneDisplay: "+49 176 112 23344", lastVisit: "2026-01-30", monthsAbsent: 4, totalVisits: 31, favoriteService: "Dauerwelle",         avgSpend: 88, avatar: "FY", color: "#f472b6" },
+  { id: "5",  name: "Sophie Wagner",  phone: "+4915212345678", phoneDisplay: "+49 152 123 45678", lastVisit: "2025-10-05", monthsAbsent: 8, totalVisits: 6,  favoriteService: "Haarschnitt",        avgSpend: 45, avatar: "SW", color: "#a78bfa" },
+  { id: "6",  name: "Zeynep Kaya",   phone: "+4917699887766", phoneDisplay: "+49 176 998 87766", lastVisit: "2026-01-14", monthsAbsent: 4, totalVisits: 19, favoriteService: "Färbung",            avgSpend: 75, avatar: "ZK", color: "#34d399" },
+  { id: "7",  name: "Laura Becker",  phone: "+4915811111222", phoneDisplay: "+49 158 111 11222", lastVisit: "2025-09-12", monthsAbsent: 9, totalVisits: 4,  favoriteService: "Highlights",         avgSpend: 110, avatar: "LB", color: "#fb923c" },
+  { id: "8",  name: "Ayşe Doğan",   phone: "+4917787654321", phoneDisplay: "+49 177 876 54321", lastVisit: "2025-12-01", monthsAbsent: 6, totalVisits: 27, favoriteService: "Haarverlängerung",   avgSpend: 200, avatar: "AD", color: "#818cf8" },
+  { id: "9",  name: "Mia Schneider", phone: "+4916133445566", phoneDisplay: "+49 161 334 45566", lastVisit: "2026-01-22", monthsAbsent: 4, totalVisits: 11, favoriteService: "Glättung",           avgSpend: 130, avatar: "MS", color: "#f87171" },
+  { id: "10", name: "Hana Fischer",  phone: "+4917255443322", phoneDisplay: "+49 172 554 43322", lastVisit: "2025-08-30", monthsAbsent: 9, totalVisits: 7,  favoriteService: "Coloration",         avgSpend: 85, avatar: "HF", color: "#4ade80" },
+  { id: "11", name: "Nora Hoffmann", phone: "+4915077665544", phoneDisplay: "+49 150 776 65544", lastVisit: "2026-02-10", monthsAbsent: 3, totalVisits: 16, favoriteService: "Botox-Behandlung",   avgSpend: 160, avatar: "NH", color: "#c084fc" },
+  { id: "12", name: "Gülay Arslan",  phone: "+4917644332211", phoneDisplay: "+49 176 443 32211", lastVisit: "2025-11-05", monthsAbsent: 7, totalVisits: 23, favoriteService: "Ombre",              avgSpend: 95, avatar: "GA", color: "#fbbf24" },
+  { id: "13", name: "Julia Richter", phone: "+4916077884455", phoneDisplay: "+49 160 778 84455", lastVisit: "2025-12-28", monthsAbsent: 5, totalVisits: 9,  favoriteService: "Toning",             avgSpend: 70, avatar: "JR", color: "#22d3ee" },
+  { id: "14", name: "Leila Schmitt", phone: "+4915299887766", phoneDisplay: "+49 152 998 87766", lastVisit: "2025-07-14", monthsAbsent: 10, totalVisits: 5, favoriteService: "Haarschnitt",        avgSpend: 48, avatar: "LS", color: "#e879f9" },
+  { id: "15", name: "Emine Çelik",  phone: "+4917633221100", phoneDisplay: "+49 176 332 21100", lastVisit: "2026-01-03", monthsAbsent: 5, totalVisits: 38, favoriteService: "Färbung + Schnitt",   avgSpend: 90, avatar: "EÇ", color: "#f59e0b" },
 ];
 
 /* ─── Message generator ─────────────────────────────────────── */
@@ -154,7 +153,7 @@ function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose:
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>
-                    {c.flag} {c.name}
+                    {c.name}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 1 }}>
                     {c.favoriteService} · seit <strong style={{ color: c.monthsAbsent >= 6 ? "#ef4444" : "var(--c-accent)" }}>{c.monthsAbsent} Mon.</strong> weg · Ø {c.avgSpend}€
@@ -526,7 +525,7 @@ export default function WinBackPage() {
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>
-                    {c.flag} {c.name}
+                    {c.name}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 1 }}>
                     {c.favoriteService} · {c.totalVisits} Besuche · zuletzt {new Date(c.lastVisit).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}

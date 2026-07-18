@@ -484,7 +484,6 @@ const WAITLIST_CUSTOMERS = [
     phone: "+4917623456789",
     phoneDisplay: "+49 176 2345 6789",
     service: "Haarpflege",
-    flag: "🇹🇷",
     avatar: "BŞ",
     color: "#10b981",
   },
@@ -493,7 +492,6 @@ const WAITLIST_CUSTOMERS = [
     phone: "+4917787654321",
     phoneDisplay: "+49 177 8765 4321",
     service: "Dauerwelle",
-    flag: "🇹🇷",
     avatar: "AD",
     color: "#60a5fa",
   },
@@ -502,7 +500,6 @@ const WAITLIST_CUSTOMERS = [
     phone: "+4915745678901",
     phoneDisplay: "+49 157 4567 8901",
     service: "Keratin-Behandlung",
-    flag: "🇬🇧",
     avatar: "EJ",
     color: "#D4B077",
   },
@@ -586,7 +583,7 @@ function WaitlistModal({ onClose }: { onClose: () => void }) {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)", marginBottom: 1 }}>
-                    {c.flag} {c.name}
+                    {c.name}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginBottom: 8 }}>
                     {c.phoneDisplay} · wartet auf: {c.service}
@@ -950,10 +947,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, color: "var(--c-fg-muted)", background: "var(--c-bg-subtle)", border: "1px solid var(--c-border)", padding: "0 8px", height: 26, borderRadius: 6 }}>
-              <PaulPulse />
-              <span>Live</span>
-            </div>
             <ThemeToggle />
           </div>
         </header>
