@@ -204,11 +204,11 @@ function SupportModal({ onClose }: { onClose: () => void }) {
         onClick={onClose}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94, y: 16 }}
+        initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }}
         transition={{ type: "spring", stiffness: 340, damping: 28 }}
         style={{
           position: "fixed", zIndex: 501,
-          top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          top: "50%", left: "50%", x: "-50%", y: "-50%",
           width: "min(480px, calc(100vw - 32px))",
           background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)",
           borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
@@ -533,13 +533,13 @@ function WaitlistModal({ onClose }: { onClose: () => void }) {
         onClick={onClose}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.93, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.93, y: 20 }}
+        initial={{ opacity: 0, scale: 0.93 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.93 }}
         transition={{ type: "spring", stiffness: 340, damping: 28 }}
         style={{
           position: "fixed", zIndex: 601,
-          top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          top: "50%", left: "50%", x: "-50%", y: "-50%",
           width: "min(560px, calc(100vw - 24px))",
           background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)",
           borderRadius: 18, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.6)",

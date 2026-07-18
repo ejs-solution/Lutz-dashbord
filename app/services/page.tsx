@@ -53,13 +53,13 @@ function EditModal({
         onClick={onClose}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.93, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.93, y: 16 }}
+        initial={{ opacity: 0, scale: 0.93 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.93 }}
         transition={{ type: "spring", stiffness: 340, damping: 30 }}
         style={{
           position: "fixed", zIndex: 201,
-          top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          top: "50%", left: "50%", x: "-50%", y: "-50%",
           width: "min(520px, calc(100vw - 32px))",
           background: "var(--c-bg-elevated)",
           border: "1px solid var(--c-border-strong)",
@@ -362,13 +362,15 @@ export default function ServicesPage() {
                       </div>
                     </div>
 
-                    {/* Edit button */}
+                    {/* Edit button — immer sichtbar (mobil gibt es kein Hover), Hover hebt nur hervor */}
                     <button
                       onClick={() => setEditItem(raw)}
-                      style={{ padding: "6px 8px", background: "none", border: "1px solid var(--c-border)", borderRadius: 8, cursor: "pointer", color: "var(--c-fg-subtle)", opacity: 0, transition: "opacity 0.15s", flexShrink: 0 }}
+                      title="Preis & Dauer anpassen"
+                      style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 9px", background: "var(--c-bg-subtle)", border: "1px solid var(--c-border)", borderRadius: 8, cursor: "pointer", color: "var(--c-fg-muted)", opacity: 0.85, transition: "opacity 0.15s", flexShrink: 0, fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}
                       className="edit-btn"
                     >
                       <Pencil size={13} />
+                      <span className="edit-btn-label">Preis</span>
                     </button>
 
                     {/* Toggle */}

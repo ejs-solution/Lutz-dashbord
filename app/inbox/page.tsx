@@ -254,9 +254,9 @@ function NewApptFromMail({ name, email, onClose, onCreated }: { name: string; em
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
         style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", zIndex: 700 }} />
-      <motion.div initial={{ opacity: 0, scale: 0.96, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
+      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
         transition={{ type: "spring", stiffness: 330, damping: 28 }}
-        style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 701, width: "min(440px, calc(100vw - 32px))", maxHeight: "88vh", overflowY: "auto", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
+        style={{ position: "fixed", top: "50%", left: "50%", x: "-50%", y: "-50%", zIndex: 701, width: "min(440px, calc(100vw - 32px))", maxHeight: "88vh", overflowY: "auto", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 18, boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
         <div style={{ height: 4, background: "linear-gradient(90deg, var(--c-accent), #e8cfa0)", borderRadius: "18px 18px 0 0" }} />
         <div style={{ padding: 20 }}>
           {done ? (

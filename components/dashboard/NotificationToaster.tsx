@@ -14,6 +14,37 @@ function fmtDay(d: string) {
   catch { return d; }
 }
 
+// Kurzes „Schnipp-Schnipp" per Web Audio — zwei gefilterte Rausch-Impulse, keine Audio-Datei nötig.
+// Browser erlauben Sound erst nach der ersten Nutzer-Interaktion; davor bleibt es einfach still.
+let audioCtx: AudioContext | null = null;
+function playScissorSnip() {
+  try {
+    audioCtx ??= new AudioContext();
+    const ctx = audioCtx;
+    if (ctx.state === "suspended") void ctx.resume();
+    const snip = (at: number, freq: number) => {
+      const dur = 0.07;
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) ** 2;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = freq;
+      bp.Q.value = 1.4;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.4, at);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + dur);
+      src.connect(bp).connect(gain).connect(ctx.destination);
+      src.start(at);
+    };
+    const t = ctx.currentTime + 0.01;
+    snip(t, 4200);
+    snip(t + 0.13, 5200);
+  } catch { /* Sound ist optional */ }
+}
+
 // Zeigt oben rechts einen animierten Toast, wenn eine neue Online-Buchung eingeht.
 export default function NotificationToaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -36,6 +67,7 @@ export default function NotificationToaster() {
         const fresh = bookings.filter((b) => !seen.current!.has(b.id));
         if (!fresh.length) return;
         fresh.forEach((b) => seen.current!.add(b.id));
+        playScissorSnip();
 
         setToasts((prev) => [
           ...fresh.reverse().map((b) => ({
