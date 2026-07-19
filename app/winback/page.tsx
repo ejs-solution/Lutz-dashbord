@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useBeta } from "@/lib/beta-context";
+import UpgradeGate from "@/components/ui/UpgradeGate";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RefreshCw, Users, Clock, TrendingUp, MessageCircle, X,
@@ -259,6 +262,11 @@ export default function WinBackPage() {
   const [showCampaign, setShowCampaign] = useState(false);
   const [sortBy, setSortBy]             = useState<"months" | "value" | "visits">("months");
   const { betaMode } = useBeta();
+  const { data: session } = useSession();
+  const pathname = usePathname();
+  // Win-Back ist ein Pro-Feature: für Starter-Kunden gesperrt, im Showroom frei sichtbar.
+  const plan = ((session?.user as { plan?: string } | undefined)?.plan ?? "starter").toLowerCase();
+  const locked = !pathname.startsWith("/demo") && plan === "starter";
 
   const filtered = useMemo(() => {
     // Echtes Konto: keine erfundenen Kunden. Beispieldaten nur im Beta-/Demo-Modus.
@@ -295,6 +303,11 @@ export default function WinBackPage() {
   const campaignCustomers = filtered.filter(c => selected.has(c.id));
 
   return (
+    <UpgradeGate
+      locked={locked}
+      feature="Win-Back Maschine"
+      description="Hole inaktive Stammkunden automatisch per WhatsApp und Gutschein zurück. Im Pro-Plan enthalten."
+    >
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
 
       {/* ── Header ── */}
@@ -358,6 +371,35 @@ export default function WinBackPage() {
           </motion.div>
         ))}
       </motion.div>
+
+      {/* ── Kampagnen-CTA (direkt bei den Kennzahlen, sofort sichtbar) ── */}
+      {filtered.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.14, ease: EASE }}
+          style={{ marginBottom: 24, display: "flex", justifyContent: "flex-end" }}
+        >
+          <button
+            onClick={() => {
+              setSelected(new Set(filtered.map(c => c.id)));
+              setShowCampaign(true);
+            }}
+            style={{
+              padding: "13px 32px", borderRadius: 12, fontSize: 14, fontWeight: 900,
+              background: "linear-gradient(135deg,#D4B077 0%,#f59e0b 100%)",
+              color: "#0A0908", border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 10,
+              boxShadow: "0 6px 24px rgba(212,176,119,0.3)",
+              maxWidth: "100%",
+            }}
+          >
+            <Zap size={17} />
+            Kampagne für alle {filtered.length} Kunden starten
+            <ChevronDown size={16} style={{ transform: "rotate(-90deg)" }} />
+          </button>
+        </motion.div>
+      )}
 
       {/* ── Toolbar ── */}
       <motion.div
@@ -573,34 +615,6 @@ export default function WinBackPage() {
         )}
       </motion.div>
 
-      {/* ── Bottom CTA ── */}
-      {filtered.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.45 }}
-          style={{ marginTop: 20, display: "flex", justifyContent: "center" }}
-        >
-          <button
-            onClick={() => {
-              setSelected(new Set(filtered.map(c => c.id)));
-              setShowCampaign(true);
-            }}
-            style={{
-              padding: "13px 32px", borderRadius: 12, fontSize: 14, fontWeight: 900,
-              background: "linear-gradient(135deg,#D4B077 0%,#f59e0b 100%)",
-              color: "#0A0908", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", gap: 10,
-              boxShadow: "0 6px 24px rgba(212,176,119,0.3)",
-            }}
-          >
-            <Zap size={17} />
-            Kampagne für alle {filtered.length} Kunden starten
-            <ChevronDown size={16} style={{ transform: "rotate(-90deg)" }} />
-          </button>
-        </motion.div>
-      )}
-
       {/* ── Campaign modal ── */}
       <AnimatePresence>
         {showCampaign && campaignCustomers.length > 0 && (
@@ -611,5 +625,6 @@ export default function WinBackPage() {
         )}
       </AnimatePresence>
     </div>
+    </UpgradeGate>
   );
 }

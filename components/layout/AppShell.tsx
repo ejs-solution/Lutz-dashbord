@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useSession, signOut } from "next-auth/react";
+import { SERVICE_CATALOG } from "@/lib/services-catalog";
+import { customers as mockCustomers } from "@/lib/mock-data";
 import NotificationToaster from "@/components/dashboard/NotificationToaster";
 import BottomDock from "@/components/layout/BottomDock";
 import {
@@ -273,6 +275,171 @@ function SupportModal({ onClose }: { onClose: () => void }) {
         </div>
       </motion.div>
     </>
+  );
+}
+
+/* ─── SearchModal (⌘K): Seiten, Kunden und Services finden ── */
+type SearchResult = {
+  key: string;
+  group: string;
+  label: string;
+  sub?: string;
+  icon: LucideIcon;
+  href: string;
+};
+
+function SearchModal({ onClose, navHref }: { onClose: () => void; navHref: (href: string) => string }) {
+  const router = useRouter();
+  const { betaMode } = useBeta();
+  const [q, setQ] = useState("");
+  const [active, setActive] = useState(0);
+  const [liveCustomers, setLiveCustomers] = useState<{ name: string; lastService?: string | null }[] | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  // Echte Kunden nur außerhalb des Demo-Modus laden; Fehler bleiben still (Suche zeigt dann nur Seiten/Services).
+  useEffect(() => {
+    if (betaMode) return;
+    fetch("/api/crm/customers")
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (Array.isArray(d?.customers)) setLiveCustomers(d.customers); })
+      .catch(() => {});
+  }, [betaMode]);
+
+  const results = useMemo<SearchResult[]>(() => {
+    // Hinweis: active wird im onChange des Inputs zurückgesetzt (kein setState im Effect).
+    const term = q.trim().toLowerCase();
+    const pages: SearchResult[] = [...WORKSPACE, ...ANALYSE, ...CONFIG].map(n => ({
+      key: `page-${n.href}`, group: "Seiten", label: n.label, icon: n.icon, href: n.href,
+    }));
+    if (!term) return pages;
+
+    const kunden = (betaMode || !liveCustomers ? mockCustomers : liveCustomers) as { name: string; preferredService?: string; lastService?: string | null }[];
+    const custResults: SearchResult[] = kunden
+      .filter(c => c.name.toLowerCase().includes(term))
+      .slice(0, 5)
+      .map((c, i) => ({ key: `cust-${i}`, group: "Kunden", label: c.name, sub: c.preferredService ?? c.lastService ?? undefined, icon: Users, href: "/crm" }));
+
+    const servResults: SearchResult[] = SERVICE_CATALOG
+      .filter(s => s.name.toLowerCase().includes(term))
+      .slice(0, 5)
+      .map(s => ({ key: `serv-${s.id}`, group: "Services", label: s.name, sub: `€ ${s.priceMin}–${s.priceMax}`, icon: Scissors, href: "/services" }));
+
+    return [...pages.filter(p => p.label.toLowerCase().includes(term)), ...custResults, ...servResults];
+  }, [q, betaMode, liveCustomers]);
+
+  function go(r: SearchResult) {
+    router.push(navHref(r.href));
+    onClose();
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive(a => Math.min(a + 1, results.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive(a => Math.max(a - 1, 0)); }
+    else if (e.key === "Enter" && results[active]) { e.preventDefault(); go(results[active]); }
+    else if (e.key === "Escape") { onClose(); }
+  }
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", zIndex: 640 }}
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
+        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+        style={{
+          position: "fixed", zIndex: 641, top: "14%", left: "50%", x: "-50%",
+          width: "min(560px, calc(100vw - 32px))",
+          background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)",
+          borderRadius: 14, overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", borderBottom: "1px solid var(--c-border)" }}>
+          <Search size={15} style={{ color: "var(--c-fg-subtle)", flexShrink: 0 }} />
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={e => { setQ(e.target.value); setActive(0); }}
+            onKeyDown={onKeyDown}
+            placeholder="Kunden, Services oder Seiten suchen…"
+            style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "var(--c-fg)", fontFamily: "inherit" }}
+          />
+          <button onClick={onClose} aria-label="Schließen" style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}>
+            <X size={15} style={{ color: "var(--c-fg-subtle)" }} />
+          </button>
+        </div>
+
+        <div style={{ maxHeight: 340, overflowY: "auto", padding: "6px 0" }}>
+          {results.length === 0 ? (
+            <div style={{ padding: "22px 16px", textAlign: "center", fontSize: 13, color: "var(--c-fg-subtle)" }}>
+              Keine Treffer für „{q}“
+            </div>
+          ) : (
+            results.map((r, i) => {
+              const Icon = r.icon;
+              const showGroup = i === 0 || results[i - 1].group !== r.group;
+              return (
+                <div key={r.key}>
+                  {showGroup && (
+                    <div style={{ padding: "8px 16px 4px", fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", color: "var(--c-fg-subtle)" }}>
+                      {r.group}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => go(r)}
+                    onMouseEnter={() => setActive(i)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: 10,
+                      padding: "9px 16px", background: i === active ? "var(--c-bg-subtle)" : "transparent",
+                      border: "none", borderLeft: `2px solid ${i === active ? "var(--c-accent)" : "transparent"}`,
+                      cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                    }}
+                  >
+                    <Icon size={15} style={{ color: i === active ? "var(--c-accent)" : "var(--c-fg-subtle)", flexShrink: 0 }} />
+                    <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--c-fg)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+                    {r.sub && <span style={{ fontSize: 11.5, color: "var(--c-fg-subtle)", flexShrink: 0 }}>{r.sub}</span>}
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 14, padding: "9px 16px", borderTop: "1px solid var(--c-border)", fontSize: 10.5, color: "var(--c-fg-faint)" }}>
+          <span>↑↓ wählen</span>
+          <span>↵ öffnen</span>
+          <span>esc schließen</span>
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
+/* ─── Upgrade-Karte (Sidebar, nur im Starter-Plan) ────────── */
+function UpgradeCard() {
+  const { data: session } = useSession();
+  const plan = ((session?.user as { plan?: string } | undefined)?.plan ?? "starter").toLowerCase();
+  if (plan !== "starter") return null;
+  return (
+    <div style={{ margin: "8px 10px 0", padding: "10px 12px", borderRadius: 10, border: "1px solid rgba(212,176,119,0.35)", background: "var(--c-accent-bg)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+        <Crown size={12} style={{ color: "var(--c-accent)" }} />
+        <span style={{ fontSize: 11, fontWeight: 800, color: "var(--c-fg)" }}>Starter-Plan</span>
+      </div>
+      <div style={{ fontSize: 10.5, color: "var(--c-fg-muted)", lineHeight: 1.45, marginBottom: 8 }}>
+        Schalte Win-Back, Analytics & mehr frei.
+      </div>
+      <a
+        href={`mailto:ejs-solution@outlook.de?subject=${encodeURIComponent("[CUTZ] Plan-Upgrade")}`}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "7px 10px", borderRadius: 8, background: "var(--c-accent)", color: "var(--c-accent-fg)", fontSize: 11.5, fontWeight: 800, textDecoration: "none" }}
+      >
+        <Crown size={12} /> Jetzt Plan upgraden
+      </a>
+    </div>
   );
 }
 
@@ -820,11 +987,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pageLabel     = usePageLabel(pathname);
   const [showSupport, setShowSupport] = useState(false);
   const [showDrawer,  setShowDrawer]  = useState(false);
+  const [showSearch,  setShowSearch]  = useState(false);
   const [collapsed,   setCollapsed]   = useState(false);
   const { betaMode, toggleBeta } = useBeta();
+  const router = useRouter();
   // Detect showroom from URL — ShowroomProvider lives below AppShell in the tree
   const showroom = pathname.startsWith("/demo");
   const navHref = (href: string) => showroom ? `/demo${href === "/" ? "" : href}` : href;
+
+  // ⌘K öffnet die Suche, ⌘1–5 springen zu den Seiten (die Kürzel aus der Sidebar).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key.toLowerCase() === "k") { e.preventDefault(); setShowSearch(v => !v); return; }
+      const jump: Record<string, string> = { "1": "/", "2": "/inbox", "3": "/kalender", "4": "/crm", "5": "/settings" };
+      const target = jump[e.key];
+      if (target) { e.preventDefault(); router.push(showroom ? `/demo${target === "/" ? "" : target}` : target); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router, showroom]);
 
   // Login/Signup und die öffentliche Buchungsseite ohne Dashboard-Shell rendern.
   if (AUTH_ROUTES.some(r => pathname.startsWith(r)) || pathname.startsWith("/buchen") || pathname.startsWith("/termin")) {
@@ -872,6 +1054,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           ) : (
             <UserCard />
           )}
+          <UpgradeCard />
         </div>
 
         {/* Navigation */}
@@ -939,9 +1122,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", lineHeight: 1.2, marginTop: 1 }}>{today}</div>
           </div>
 
-          <button className="btn-ghost" style={{ width: 240, justifyContent: "space-between", color: "var(--c-fg-subtle)", fontSize: 12 }}>
+          <button onClick={() => setShowSearch(true)} className="btn-ghost" style={{ width: 240, justifyContent: "space-between", color: "var(--c-fg-subtle)", fontSize: 12 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Search size={12} /> Suchen oder springen
+              <Search size={12} /> Suche
             </span>
             <span style={{ fontSize: 11, color: "var(--c-fg-faint)" }}>⌘K</span>
           </button>
@@ -978,6 +1161,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <span style={{ fontWeight: 700, fontSize: 15, color: "var(--c-fg)", letterSpacing: -0.3 }}>Cutz</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button className="btn-icon" onClick={() => setShowSearch(true)} aria-label="Suche">
+              <Search size={16} style={{ color: "var(--c-fg-subtle)" }} />
+            </button>
             <ThemeToggle />
             <MobileUserButton showroom={showroom} />
           </div>
@@ -1092,6 +1278,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Support modal */}
       <AnimatePresence>
         {showSupport && <SupportModal onClose={() => setShowSupport(false)} />}
+      </AnimatePresence>
+
+      {/* Suche (⌘K) */}
+      <AnimatePresence>
+        {showSearch && <SearchModal onClose={() => setShowSearch(false)} navHref={navHref} />}
       </AnimatePresence>
     </div>
   );
