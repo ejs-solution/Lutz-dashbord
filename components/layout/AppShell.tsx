@@ -13,7 +13,7 @@ import {
   BarChart2, FileText, Link2, Scissors, Search,
   Sun, Moon, Zap, UserSquare2, LogOut, ChevronUp,
   HelpCircle, Send, X, Crown, Camera, Bell, MessageCircle,
-  Clock, RefreshCw, PanelLeft, type LucideIcon,
+  Clock, RefreshCw, PanelLeft, Ticket, type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useBeta } from "@/lib/beta-context";
@@ -45,6 +45,7 @@ const ANALYSE: NavItem[] = [
 
 const CONFIG: NavItem[] = [
   { href: "/services",     label: "Services",      icon: Scissors     },
+  { href: "/gutscheine",   label: "Gutscheine",     icon: Ticket       },
   { href: "/mitarbeiter",  label: "Team",           icon: UserSquare2  },
   { href: "/settings",     label: "Einstellungen",  icon: Settings, shortcut: "⌘5" },
   { href: "/integrations", label: "Integrationen",  icon: Link2        },

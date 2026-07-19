@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useBeta } from "@/lib/beta-context";
 import UpgradeGate from "@/components/ui/UpgradeGate";
+import { type Voucher, getWinbackVoucher } from "@/lib/vouchers";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RefreshCw, Users, Clock, TrendingUp, MessageCircle, X,
@@ -12,7 +13,6 @@ import {
 } from "lucide-react";
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
-const COUPON = "COMEBACK10";
 
 /* ─── Types ────────────────────────────────────────────────── */
 type Customer = {
@@ -49,19 +49,21 @@ const CHURNED: Customer[] = [
 ];
 
 /* ─── Message generator ─────────────────────────────────────── */
-function generateMessage(c: Customer): string {
+function generateMessage(c: Customer, v: Voucher): string {
   const firstName = c.name.split(" ")[0];
   const monthWord = c.monthsAbsent === 1 ? "Monat" : "Monaten";
-  return `Hallo ${firstName}! 👋\n\nWir vermissen dich! Du warst seit ${c.monthsAbsent} ${monthWord} nicht mehr bei uns – und du weißt, dass deine Haare das liebste Pflege verdienen. 💆‍♀️\n\nAls Stammkunde hast du einen exklusiven *10% Rabatt* auf deinen nächsten Besuch:\n\n🎁 *Gutscheincode: ${COUPON}*\n\nEinfach beim Termin nennen und schon sparst du. Der Code ist 30 Tage gültig.\n\nWann darf ich dir einen Termin reservieren?\n\nDein CUTZ Solution Team ✂️\nwww.cutzsolution.de`;
+  return `Hallo ${firstName}! 👋\n\nWir vermissen dich! Du warst seit ${c.monthsAbsent} ${monthWord} nicht mehr bei uns – und du weißt, dass deine Haare das liebste Pflege verdienen. 💆‍♀️\n\nAls Stammkunde hast du einen exklusiven *${v.percent}% Rabatt* auf deinen nächsten Besuch:\n\n🎁 *Gutscheincode: ${v.code}*\n\nEinfach beim Termin nennen und schon sparst du. Der Code ist ${v.validDays} Tage gültig.\n\nWann darf ich dir einen Termin reservieren?\n\nDein CUTZ Solution Team ✂️\nwww.cutzsolution.de`;
 }
 
 /* ─── CampaignModal ──────────────────────────────────────────── */
 function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose: () => void }) {
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [view, setView] = useState<string | null>(null); // customer id for preview
+  // Der Gutschein kommt aus dem Gutschein-Bereich (dort per „Für Win-Back nutzen" wählbar).
+  const [voucher] = useState<Voucher>(() => getWinbackVoucher());
 
   function openWhatsApp(c: Customer) {
-    const url = `https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(generateMessage(c))}`;
+    const url = `https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(generateMessage(c, voucher))}`;
     window.open(url, "_blank");
     setSent(s => ({ ...s, [c.id]: true }));
   }
@@ -107,7 +109,7 @@ function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose:
               </div>
               <div style={{ fontSize: 12, color: "var(--c-fg-subtle)", marginTop: 4 }}>
                 <span style={{ color: "var(--c-accent)", fontWeight: 700 }}>{customers.length} Kunden</span>
-                {" "}· Gutscheincode <strong style={{ color: "var(--c-fg)" }}>{COUPON}</strong> (10% Rabatt, 30 Tage gültig) · via WhatsApp
+                {" "}· Gutscheincode <strong style={{ color: "var(--c-fg)" }}>{voucher.code}</strong> ({voucher.percent}% Rabatt, {voucher.validDays} Tage gültig) · via WhatsApp
               </div>
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
@@ -215,7 +217,7 @@ function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose:
                       background: "var(--c-bg-subtle)", borderRadius: 8,
                       padding: "12px 14px", border: "1px solid var(--c-border)",
                     }}>
-                      {generateMessage(previewCustomer)}
+                      {generateMessage(previewCustomer, voucher)}
                     </div>
                   </div>
                 </motion.div>
@@ -240,7 +242,7 @@ function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose:
             Alle {customers.length} gleichzeitig kontaktieren
           </button>
           <div style={{ textAlign: "center", fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 8 }}>
-            Öffnet WhatsApp mit personalisierter Nachricht + Gutscheincode {COUPON}
+            Öffnet WhatsApp mit personalisierter Nachricht + Gutscheincode {voucher.code}
           </div>
         </div>
       </motion.div>
@@ -319,7 +321,7 @@ export default function WinBackPage() {
           <h1 style={{ fontSize: 22, fontWeight: 900, color: "var(--c-fg)", letterSpacing: -0.4 }}>Win-Back Maschine</h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--c-fg-subtle)", marginLeft: 42 }}>
-          Stammkunden zurückgewinnen mit personalisierten WhatsApp-Nachrichten und 10% Gutschein.
+          Stammkunden zurückgewinnen mit personalisierten WhatsApp-Nachrichten und deinem eigenen Gutschein-Code.
         </p>
       </motion.div>
 
