@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useBeta } from "@/lib/beta-context";
+import UpgradeGate from "@/components/ui/UpgradeGate";
+import { type Voucher, getWinbackVoucher } from "@/lib/vouchers";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RefreshCw, Users, Clock, TrendingUp, MessageCircle, X,
@@ -9,7 +13,6 @@ import {
 } from "lucide-react";
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
-const COUPON = "COMEBACK10";
 
 /* ─── Types ────────────────────────────────────────────────── */
 type Customer = {
@@ -22,44 +25,45 @@ type Customer = {
   totalVisits: number;
   favoriteService: string;
   avgSpend: number;
-  flag: string;
   avatar: string;
   color: string;
 };
 
 /* ─── Mock data ─────────────────────────────────────────────── */
 const CHURNED: Customer[] = [
-  { id: "1",  name: "Büşra Şahin",    phone: "+4917623456789", phoneDisplay: "+49 176 234 56789", lastVisit: "2026-01-08", monthsAbsent: 4, totalVisits: 14, favoriteService: "Haarpflege",        avgSpend: 62,  flag: "🇹🇷", avatar: "BŞ", color: "#10b981" },
-  { id: "2",  name: "Maria Müller",   phone: "+4916098765432", phoneDisplay: "+49 160 987 65432", lastVisit: "2025-12-15", monthsAbsent: 5, totalVisits: 22, favoriteService: "Balayage",           avgSpend: 120, flag: "🇩🇪", avatar: "MM", color: "#60a5fa" },
-  { id: "3",  name: "Emma Johnson",   phone: "+4915745678901", phoneDisplay: "+49 157 456 78901", lastVisit: "2025-11-20", monthsAbsent: 6, totalVisits: 8,  favoriteService: "Keratin-Behandlung", avgSpend: 95,  flag: "🇬🇧", avatar: "EJ", color: "#D4B077" },
-  { id: "4",  name: "Fatma Yıldız",  phone: "+4917611223344", phoneDisplay: "+49 176 112 23344", lastVisit: "2026-01-30", monthsAbsent: 4, totalVisits: 31, favoriteService: "Dauerwelle",         avgSpend: 88,  flag: "🇹🇷", avatar: "FY", color: "#f472b6" },
-  { id: "5",  name: "Sophie Wagner",  phone: "+4915212345678", phoneDisplay: "+49 152 123 45678", lastVisit: "2025-10-05", monthsAbsent: 8, totalVisits: 6,  favoriteService: "Haarschnitt",        avgSpend: 45,  flag: "🇩🇪", avatar: "SW", color: "#a78bfa" },
-  { id: "6",  name: "Zeynep Kaya",   phone: "+4917699887766", phoneDisplay: "+49 176 998 87766", lastVisit: "2026-01-14", monthsAbsent: 4, totalVisits: 19, favoriteService: "Färbung",            avgSpend: 75,  flag: "🇹🇷", avatar: "ZK", color: "#34d399" },
-  { id: "7",  name: "Laura Becker",  phone: "+4915811111222", phoneDisplay: "+49 158 111 11222", lastVisit: "2025-09-12", monthsAbsent: 9, totalVisits: 4,  favoriteService: "Highlights",         avgSpend: 110, flag: "🇩🇪", avatar: "LB", color: "#fb923c" },
-  { id: "8",  name: "Ayşe Doğan",   phone: "+4917787654321", phoneDisplay: "+49 177 876 54321", lastVisit: "2025-12-01", monthsAbsent: 6, totalVisits: 27, favoriteService: "Haarverlängerung",   avgSpend: 200, flag: "🇹🇷", avatar: "AD", color: "#818cf8" },
-  { id: "9",  name: "Mia Schneider", phone: "+4916133445566", phoneDisplay: "+49 161 334 45566", lastVisit: "2026-01-22", monthsAbsent: 4, totalVisits: 11, favoriteService: "Glättung",           avgSpend: 130, flag: "🇩🇪", avatar: "MS", color: "#f87171" },
-  { id: "10", name: "Hana Fischer",  phone: "+4917255443322", phoneDisplay: "+49 172 554 43322", lastVisit: "2025-08-30", monthsAbsent: 9, totalVisits: 7,  favoriteService: "Coloration",         avgSpend: 85,  flag: "🇩🇪", avatar: "HF", color: "#4ade80" },
-  { id: "11", name: "Nora Hoffmann", phone: "+4915077665544", phoneDisplay: "+49 150 776 65544", lastVisit: "2026-02-10", monthsAbsent: 3, totalVisits: 16, favoriteService: "Botox-Behandlung",   avgSpend: 160, flag: "🇩🇪", avatar: "NH", color: "#c084fc" },
-  { id: "12", name: "Gülay Arslan",  phone: "+4917644332211", phoneDisplay: "+49 176 443 32211", lastVisit: "2025-11-05", monthsAbsent: 7, totalVisits: 23, favoriteService: "Ombre",              avgSpend: 95,  flag: "🇹🇷", avatar: "GA", color: "#fbbf24" },
-  { id: "13", name: "Julia Richter", phone: "+4916077884455", phoneDisplay: "+49 160 778 84455", lastVisit: "2025-12-28", monthsAbsent: 5, totalVisits: 9,  favoriteService: "Toning",             avgSpend: 70,  flag: "🇩🇪", avatar: "JR", color: "#22d3ee" },
-  { id: "14", name: "Leila Schmitt", phone: "+4915299887766", phoneDisplay: "+49 152 998 87766", lastVisit: "2025-07-14", monthsAbsent: 10, totalVisits: 5, favoriteService: "Haarschnitt",        avgSpend: 48,  flag: "🇩🇪", avatar: "LS", color: "#e879f9" },
-  { id: "15", name: "Emine Çelik",  phone: "+4917633221100", phoneDisplay: "+49 176 332 21100", lastVisit: "2026-01-03", monthsAbsent: 5, totalVisits: 38, favoriteService: "Färbung + Schnitt",   avgSpend: 90,  flag: "🇹🇷", avatar: "EÇ", color: "#f59e0b" },
+  { id: "1",  name: "Büşra Şahin",    phone: "+4917623456789", phoneDisplay: "+49 176 234 56789", lastVisit: "2026-01-08", monthsAbsent: 4, totalVisits: 14, favoriteService: "Haarpflege",        avgSpend: 62, avatar: "BŞ", color: "#10b981" },
+  { id: "2",  name: "Maria Müller",   phone: "+4916098765432", phoneDisplay: "+49 160 987 65432", lastVisit: "2025-12-15", monthsAbsent: 5, totalVisits: 22, favoriteService: "Balayage",           avgSpend: 120, avatar: "MM", color: "#60a5fa" },
+  { id: "3",  name: "Emma Johnson",   phone: "+4915745678901", phoneDisplay: "+49 157 456 78901", lastVisit: "2025-11-20", monthsAbsent: 6, totalVisits: 8,  favoriteService: "Keratin-Behandlung", avgSpend: 95, avatar: "EJ", color: "#D4B077" },
+  { id: "4",  name: "Fatma Yıldız",  phone: "+4917611223344", phoneDisplay: "+49 176 112 23344", lastVisit: "2026-01-30", monthsAbsent: 4, totalVisits: 31, favoriteService: "Dauerwelle",         avgSpend: 88, avatar: "FY", color: "#f472b6" },
+  { id: "5",  name: "Sophie Wagner",  phone: "+4915212345678", phoneDisplay: "+49 152 123 45678", lastVisit: "2025-10-05", monthsAbsent: 8, totalVisits: 6,  favoriteService: "Haarschnitt",        avgSpend: 45, avatar: "SW", color: "#a78bfa" },
+  { id: "6",  name: "Zeynep Kaya",   phone: "+4917699887766", phoneDisplay: "+49 176 998 87766", lastVisit: "2026-01-14", monthsAbsent: 4, totalVisits: 19, favoriteService: "Färbung",            avgSpend: 75, avatar: "ZK", color: "#34d399" },
+  { id: "7",  name: "Laura Becker",  phone: "+4915811111222", phoneDisplay: "+49 158 111 11222", lastVisit: "2025-09-12", monthsAbsent: 9, totalVisits: 4,  favoriteService: "Highlights",         avgSpend: 110, avatar: "LB", color: "#fb923c" },
+  { id: "8",  name: "Ayşe Doğan",   phone: "+4917787654321", phoneDisplay: "+49 177 876 54321", lastVisit: "2025-12-01", monthsAbsent: 6, totalVisits: 27, favoriteService: "Haarverlängerung",   avgSpend: 200, avatar: "AD", color: "#818cf8" },
+  { id: "9",  name: "Mia Schneider", phone: "+4916133445566", phoneDisplay: "+49 161 334 45566", lastVisit: "2026-01-22", monthsAbsent: 4, totalVisits: 11, favoriteService: "Glättung",           avgSpend: 130, avatar: "MS", color: "#f87171" },
+  { id: "10", name: "Hana Fischer",  phone: "+4917255443322", phoneDisplay: "+49 172 554 43322", lastVisit: "2025-08-30", monthsAbsent: 9, totalVisits: 7,  favoriteService: "Coloration",         avgSpend: 85, avatar: "HF", color: "#4ade80" },
+  { id: "11", name: "Nora Hoffmann", phone: "+4915077665544", phoneDisplay: "+49 150 776 65544", lastVisit: "2026-02-10", monthsAbsent: 3, totalVisits: 16, favoriteService: "Botox-Behandlung",   avgSpend: 160, avatar: "NH", color: "#c084fc" },
+  { id: "12", name: "Gülay Arslan",  phone: "+4917644332211", phoneDisplay: "+49 176 443 32211", lastVisit: "2025-11-05", monthsAbsent: 7, totalVisits: 23, favoriteService: "Ombre",              avgSpend: 95, avatar: "GA", color: "#fbbf24" },
+  { id: "13", name: "Julia Richter", phone: "+4916077884455", phoneDisplay: "+49 160 778 84455", lastVisit: "2025-12-28", monthsAbsent: 5, totalVisits: 9,  favoriteService: "Toning",             avgSpend: 70, avatar: "JR", color: "#22d3ee" },
+  { id: "14", name: "Leila Schmitt", phone: "+4915299887766", phoneDisplay: "+49 152 998 87766", lastVisit: "2025-07-14", monthsAbsent: 10, totalVisits: 5, favoriteService: "Haarschnitt",        avgSpend: 48, avatar: "LS", color: "#e879f9" },
+  { id: "15", name: "Emine Çelik",  phone: "+4917633221100", phoneDisplay: "+49 176 332 21100", lastVisit: "2026-01-03", monthsAbsent: 5, totalVisits: 38, favoriteService: "Färbung + Schnitt",   avgSpend: 90, avatar: "EÇ", color: "#f59e0b" },
 ];
 
 /* ─── Message generator ─────────────────────────────────────── */
-function generateMessage(c: Customer): string {
+function generateMessage(c: Customer, v: Voucher): string {
   const firstName = c.name.split(" ")[0];
   const monthWord = c.monthsAbsent === 1 ? "Monat" : "Monaten";
-  return `Hallo ${firstName}! 👋\n\nWir vermissen dich! Du warst seit ${c.monthsAbsent} ${monthWord} nicht mehr bei uns – und du weißt, dass deine Haare das liebste Pflege verdienen. 💆‍♀️\n\nAls Stammkunde hast du einen exklusiven *10% Rabatt* auf deinen nächsten Besuch:\n\n🎁 *Gutscheincode: ${COUPON}*\n\nEinfach beim Termin nennen und schon sparst du. Der Code ist 30 Tage gültig.\n\nWann darf ich dir einen Termin reservieren?\n\nDein CUTZ Solution Team ✂️\nwww.cutzsolution.de`;
+  return `Hallo ${firstName}! 👋\n\nWir vermissen dich! Du warst seit ${c.monthsAbsent} ${monthWord} nicht mehr bei uns – und du weißt, dass deine Haare das liebste Pflege verdienen. 💆‍♀️\n\nAls Stammkunde hast du einen exklusiven *${v.percent}% Rabatt* auf deinen nächsten Besuch:\n\n🎁 *Gutscheincode: ${v.code}*\n\nEinfach beim Termin nennen und schon sparst du. Der Code ist ${v.validDays} Tage gültig.\n\nWann darf ich dir einen Termin reservieren?\n\nDein CUTZ Solution Team ✂️\nwww.cutzsolution.de`;
 }
 
 /* ─── CampaignModal ──────────────────────────────────────────── */
 function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose: () => void }) {
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [view, setView] = useState<string | null>(null); // customer id for preview
+  // Der Gutschein kommt aus dem Gutschein-Bereich (dort per „Für Win-Back nutzen" wählbar).
+  const [voucher] = useState<Voucher>(() => getWinbackVoucher());
 
   function openWhatsApp(c: Customer) {
-    const url = `https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(generateMessage(c))}`;
+    const url = `https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(generateMessage(c, voucher))}`;
     window.open(url, "_blank");
     setSent(s => ({ ...s, [c.id]: true }));
   }
@@ -79,13 +83,13 @@ function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose:
         onClick={onClose}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 24 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.94, y: 24 }}
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.94 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
         style={{
           position: "fixed", zIndex: 701,
-          top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          top: "50%", left: "50%", x: "-50%", y: "-50%",
           width: "min(680px, calc(100vw - 24px))",
           maxHeight: "calc(100vh - 48px)",
           background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)",
@@ -105,7 +109,7 @@ function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose:
               </div>
               <div style={{ fontSize: 12, color: "var(--c-fg-subtle)", marginTop: 4 }}>
                 <span style={{ color: "var(--c-accent)", fontWeight: 700 }}>{customers.length} Kunden</span>
-                {" "}· Gutscheincode <strong style={{ color: "var(--c-fg)" }}>{COUPON}</strong> (10% Rabatt, 30 Tage gültig) · via WhatsApp
+                {" "}· Gutscheincode <strong style={{ color: "var(--c-fg)" }}>{voucher.code}</strong> ({voucher.percent}% Rabatt, {voucher.validDays} Tage gültig) · via WhatsApp
               </div>
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
@@ -154,7 +158,7 @@ function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose:
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>
-                    {c.flag} {c.name}
+                    {c.name}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 1 }}>
                     {c.favoriteService} · seit <strong style={{ color: c.monthsAbsent >= 6 ? "#ef4444" : "var(--c-accent)" }}>{c.monthsAbsent} Mon.</strong> weg · Ø {c.avgSpend}€
@@ -213,7 +217,7 @@ function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose:
                       background: "var(--c-bg-subtle)", borderRadius: 8,
                       padding: "12px 14px", border: "1px solid var(--c-border)",
                     }}>
-                      {generateMessage(previewCustomer)}
+                      {generateMessage(previewCustomer, voucher)}
                     </div>
                   </div>
                 </motion.div>
@@ -238,7 +242,7 @@ function CampaignModal({ customers, onClose }: { customers: Customer[]; onClose:
             Alle {customers.length} gleichzeitig kontaktieren
           </button>
           <div style={{ textAlign: "center", fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 8 }}>
-            Öffnet WhatsApp mit personalisierter Nachricht + Gutscheincode {COUPON}
+            Öffnet WhatsApp mit personalisierter Nachricht + Gutscheincode {voucher.code}
           </div>
         </div>
       </motion.div>
@@ -260,6 +264,11 @@ export default function WinBackPage() {
   const [showCampaign, setShowCampaign] = useState(false);
   const [sortBy, setSortBy]             = useState<"months" | "value" | "visits">("months");
   const { betaMode } = useBeta();
+  const { data: session } = useSession();
+  const pathname = usePathname();
+  // Win-Back ist ein Pro-Feature: für Starter-Kunden gesperrt, im Showroom frei sichtbar.
+  const plan = ((session?.user as { plan?: string } | undefined)?.plan ?? "starter").toLowerCase();
+  const locked = !pathname.startsWith("/demo") && plan === "starter";
 
   const filtered = useMemo(() => {
     // Echtes Konto: keine erfundenen Kunden. Beispieldaten nur im Beta-/Demo-Modus.
@@ -296,6 +305,11 @@ export default function WinBackPage() {
   const campaignCustomers = filtered.filter(c => selected.has(c.id));
 
   return (
+    <UpgradeGate
+      locked={locked}
+      feature="Win-Back Maschine"
+      description="Hole inaktive Stammkunden automatisch per WhatsApp und Gutschein zurück. Im Pro-Plan enthalten."
+    >
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
 
       {/* ── Header ── */}
@@ -307,7 +321,7 @@ export default function WinBackPage() {
           <h1 style={{ fontSize: 22, fontWeight: 900, color: "var(--c-fg)", letterSpacing: -0.4 }}>Win-Back Maschine</h1>
         </div>
         <p style={{ fontSize: 13, color: "var(--c-fg-subtle)", marginLeft: 42 }}>
-          Stammkunden zurückgewinnen mit personalisierten WhatsApp-Nachrichten und 10% Gutschein.
+          Stammkunden zurückgewinnen mit personalisierten WhatsApp-Nachrichten und deinem eigenen Gutschein-Code.
         </p>
       </motion.div>
 
@@ -359,6 +373,35 @@ export default function WinBackPage() {
           </motion.div>
         ))}
       </motion.div>
+
+      {/* ── Kampagnen-CTA (direkt bei den Kennzahlen, sofort sichtbar) ── */}
+      {filtered.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.14, ease: EASE }}
+          style={{ marginBottom: 24, display: "flex", justifyContent: "flex-end" }}
+        >
+          <button
+            onClick={() => {
+              setSelected(new Set(filtered.map(c => c.id)));
+              setShowCampaign(true);
+            }}
+            style={{
+              padding: "13px 32px", borderRadius: 12, fontSize: 14, fontWeight: 900,
+              background: "linear-gradient(135deg,#D4B077 0%,#f59e0b 100%)",
+              color: "#0A0908", border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 10,
+              boxShadow: "0 6px 24px rgba(212,176,119,0.3)",
+              maxWidth: "100%",
+            }}
+          >
+            <Zap size={17} />
+            Kampagne für alle {filtered.length} Kunden starten
+            <ChevronDown size={16} style={{ transform: "rotate(-90deg)" }} />
+          </button>
+        </motion.div>
+      )}
 
       {/* ── Toolbar ── */}
       <motion.div
@@ -526,7 +569,7 @@ export default function WinBackPage() {
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>
-                    {c.flag} {c.name}
+                    {c.name}
                   </div>
                   <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 1 }}>
                     {c.favoriteService} · {c.totalVisits} Besuche · zuletzt {new Date(c.lastVisit).toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" })}
@@ -574,34 +617,6 @@ export default function WinBackPage() {
         )}
       </motion.div>
 
-      {/* ── Bottom CTA ── */}
-      {filtered.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.45 }}
-          style={{ marginTop: 20, display: "flex", justifyContent: "center" }}
-        >
-          <button
-            onClick={() => {
-              setSelected(new Set(filtered.map(c => c.id)));
-              setShowCampaign(true);
-            }}
-            style={{
-              padding: "13px 32px", borderRadius: 12, fontSize: 14, fontWeight: 900,
-              background: "linear-gradient(135deg,#D4B077 0%,#f59e0b 100%)",
-              color: "#0A0908", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", gap: 10,
-              boxShadow: "0 6px 24px rgba(212,176,119,0.3)",
-            }}
-          >
-            <Zap size={17} />
-            Kampagne für alle {filtered.length} Kunden starten
-            <ChevronDown size={16} style={{ transform: "rotate(-90deg)" }} />
-          </button>
-        </motion.div>
-      )}
-
       {/* ── Campaign modal ── */}
       <AnimatePresence>
         {showCampaign && campaignCustomers.length > 0 && (
@@ -612,5 +627,6 @@ export default function WinBackPage() {
         )}
       </AnimatePresence>
     </div>
+    </UpgradeGate>
   );
 }

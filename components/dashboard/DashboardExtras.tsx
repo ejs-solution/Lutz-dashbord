@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { TrendingUp, CalendarDays, Globe, Copy, Check, Link2, ChevronRight, Sparkles } from "lucide-react";
+import { TrendingUp, CalendarDays, Globe, Copy, Check, Link2, ChevronRight } from "lucide-react";
 
 type Dash = {
   week: { revenue: number; count: number; online: number };
@@ -86,7 +86,6 @@ export default function DashboardExtras() {
         </>
       ) : (
         <div style={{ padding: "24px 18px", textAlign: "center", background: "var(--c-bg-elevated)", border: "1px solid var(--c-border)", borderRadius: 14 }}>
-          <Sparkles size={22} style={{ color: "var(--c-accent)", marginBottom: 10 }} />
           <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-fg)", marginBottom: 4 }}>Bereit für die ersten Buchungen</div>
           <div style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 16, lineHeight: 1.5, maxWidth: 320, marginLeft: "auto", marginRight: "auto" }}>
             Teile deinen Buchungslink, damit Kunden direkt online buchen — die Termine erscheinen dann automatisch hier.

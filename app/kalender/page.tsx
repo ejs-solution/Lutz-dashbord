@@ -690,13 +690,13 @@ function ApptModal({ appt, onClose }: { appt: ApptWithDate; onClose: () => void 
         onClick={onClose}
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.93, y: 14 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.93, y: 14 }}
+        initial={{ opacity: 0, scale: 0.93 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.93 }}
         transition={{ type: "spring", stiffness: 340, damping: 30 }}
         style={{
           position: "fixed", zIndex: 301,
-          top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          top: "50%", left: "50%", x: "-50%", y: "-50%",
           width: "min(460px, calc(100vw - 32px))",
           background: "var(--c-bg-elevated)",
           border: "1px solid var(--c-border)",

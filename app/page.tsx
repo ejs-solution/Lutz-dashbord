@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
-import { AlertTriangle, X, RefreshCw, ChevronRight, Ban, CalendarDays, TrendingUp, Clock, type LucideIcon } from "lucide-react";
+import { AlertTriangle, X, Check, ChevronDown, RefreshCw, ChevronRight, Ban, CalendarDays, TrendingUp, Clock, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useBeta } from "@/lib/beta-context";
@@ -40,6 +40,20 @@ const EMPLOYEES: Employee[] = ["Alle", "Aynur", "Monika", "Lisa"];
 
 const MOCK_BREAKS = [
   { afterTime: "12:30", label: "Mittagspause 13:00–14:00" },
+];
+
+/* ─── Neue Buchungs-Anfragen (Demo-Daten im Beta-Modus) ──── */
+type BookingRequest = {
+  id: string;
+  name: string;
+  service: string;
+  time: string;
+  channel: string;
+};
+
+const MOCK_REQUESTS: BookingRequest[] = [
+  { id: "req-1", name: "Selin Aydın", service: "Damenhaarschnitt mittellang", time: "Morgen · 14:00 Uhr", channel: "WhatsApp" },
+  { id: "req-2", name: "Jonas Weber", service: "Herrenhaarschnitt + Bart", time: "Freitag · 16:30 Uhr", channel: "Online-Buchung" },
 ];
 
 /* ─── Helpers ────────────────────────────────────────────── */
@@ -277,6 +291,16 @@ export default function DashboardPage() {
   useEffect(() => { const t = setInterval(() => setClock(new Date()), 1000); return () => clearInterval(t); }, []);
   const [saying] = useState(() => SAYINGS[Math.floor(Math.random() * SAYINGS.length)]);
 
+  /* ── Neue Anfragen (im Beta-Modus Demo-Daten; live später über API-Status) ── */
+  const [resolvedRequests, setResolvedRequests] = useState<Set<string>>(new Set());
+  const [requestsOpen, setRequestsOpen]         = useState(false);
+  const requests = betaMode ? MOCK_REQUESTS.filter(r => !resolvedRequests.has(r.id)) : [];
+
+  function resolveRequest(id: string) {
+    // Entfernt die Anfrage aus dem Banner; live folgt hier später der PATCH auf /api/appointments.
+    setResolvedRequests(prev => new Set(prev).add(id));
+  }
+
   /* ── Load data ── */
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -326,8 +350,7 @@ export default function DashboardPage() {
   const totalRevenue   = appts.reduce((s, a) => s + a.totalAmount, 0);
   const openDeposits   = appts.filter(a => !a.depositPaid).length;
   const cancelledToday = 0; // real: fetch cancelled separately
-  const newRequests    = betaMode ? 2 : 0;
-  const showAlert      = newRequests > 0 || cancelledToday > 0;
+  const showAlert      = requests.length > 0 || cancelledToday > 0;
 
   /* ── Cancel appt ── */
   function handleCancel(id: string) {
@@ -393,24 +416,88 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* ── Alert row ── */}
+      {/* ── Alert row: anklickbar, klappt die Anfragen auf ── */}
       {showAlert && !loading && (
         <motion.div
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "10px 16px",
             background: "rgba(212,176,119,0.08)",
             borderBottom: "1px solid rgba(212,176,119,0.2)",
           }}
         >
-          <AlertTriangle size={13} style={{ color: "var(--c-accent)", flexShrink: 0 }} />
-          <span style={{ fontSize: 13, color: "var(--c-fg-subtle)" }}>
-            {newRequests > 0 && <><strong style={{ color: "var(--c-fg)" }}>{newRequests} neue Anfragen</strong></>}
-            {newRequests > 0 && cancelledToday > 0 && " · "}
-            {cancelledToday > 0 && <><strong style={{ color: "var(--c-fg)" }}>{cancelledToday} Stornierung</strong> heute</>}
-          </span>
+          <button
+            onClick={() => setRequestsOpen(v => !v)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 16px", background: "none", border: "none",
+              cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+            }}
+          >
+            <AlertTriangle size={13} style={{ color: "var(--c-accent)", flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: "var(--c-fg-subtle)", flex: 1 }}>
+              {requests.length > 0 && <><strong style={{ color: "var(--c-fg)" }}>{requests.length} neue {requests.length === 1 ? "Anfrage" : "Anfragen"}</strong></>}
+              {requests.length > 0 && cancelledToday > 0 && " · "}
+              {cancelledToday > 0 && <><strong style={{ color: "var(--c-fg)" }}>{cancelledToday} Stornierung</strong> heute</>}
+            </span>
+            <ChevronDown size={14} style={{ color: "var(--c-fg-subtle)", flexShrink: 0, transform: requestsOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+          </button>
+
+          <AnimatePresence>
+            {requestsOpen && requests.length > 0 && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
+                style={{ overflow: "hidden" }}
+              >
+                <div style={{ padding: "0 16px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  {requests.map(r => (
+                    <div
+                      key={r.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+                        padding: "10px 12px", background: "var(--c-bg-elevated)",
+                        border: "1px solid var(--c-border)", borderRadius: 10,
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 150 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>{r.name}</div>
+                        <div style={{ fontSize: 11.5, color: "var(--c-fg-muted)", marginTop: 1 }}>
+                          {r.service} · {r.time} · via {r.channel}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          onClick={() => resolveRequest(r.id)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 5, padding: "7px 12px",
+                            borderRadius: 8, border: "none", background: "var(--c-accent)",
+                            color: "var(--c-accent-fg)", fontSize: 12, fontWeight: 700,
+                            cursor: "pointer", fontFamily: "inherit",
+                          }}
+                        >
+                          <Check size={13} /> Bestätigen
+                        </button>
+                        <button
+                          onClick={() => resolveRequest(r.id)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 5, padding: "7px 12px",
+                            borderRadius: 8, border: "1px solid var(--c-border)", background: "transparent",
+                            color: "var(--c-danger)", fontSize: 12, fontWeight: 600,
+                            cursor: "pointer", fontFamily: "inherit",
+                          }}
+                        >
+                          <X size={13} /> Ablehnen
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
 

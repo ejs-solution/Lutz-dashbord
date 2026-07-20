@@ -69,11 +69,10 @@ function InstagramIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function SupabaseIcon({ size = 18 }: { size?: number }) {
+function FacebookIcon({ size = 18 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="4" fill="#3ECF8E"/>
-      <path d="M13 3 6 13h5l-1 8 8-11h-6l1-7z" fill="white"/>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#1877F2">
+      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.026 1.792-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.931-1.956 1.886v2.264h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
     </svg>
   );
 }
@@ -134,6 +133,15 @@ export default function IntegrationsPage() {
       category: "Messaging",
       badge: "Q3 2026",
     },
+    {
+      id: "facebook",
+      name: "Facebook Messenger",
+      description: "Anfragen über deine Facebook-Seite automatisch beantworten und Termine buchen.",
+      status: "coming_soon",
+      icon: <FacebookIcon size={22} />,
+      category: "Messaging",
+      badge: "Q3 2026",
+    },
     // ── Bezahlung
     {
       id: "stripe",
@@ -143,15 +151,6 @@ export default function IntegrationsPage() {
       icon: <StripeIcon size={22} />,
       category: "Bezahlung",
       badge: "Q4 2026",
-    },
-    // ── Daten
-    {
-      id: "supabase",
-      name: "Supabase",
-      description: "Deine Kundendaten, Termine und Mitarbeiter werden sicher in Supabase (EU / Frankfurt) gespeichert.",
-      status: "connected",
-      icon: <SupabaseIcon size={22} />,
-      category: "Datenbank",
     },
   ];
 

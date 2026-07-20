@@ -275,8 +275,8 @@ export default function BuchenPage() {
             <Panel k="done">
               <div style={{ textAlign: "center", padding: "34px 0 10px" }}>
                 <motion.div initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                  style={{ width: 72, height: 72, borderRadius: 22, background: "linear-gradient(135deg, var(--c-success), #16a34a)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 10px 30px rgba(34,197,94,0.3)" }}>
-                  <Check size={36} color="#fff" strokeWidth={3} />
+                  style={{ width: 72, height: 72, borderRadius: 22, background: "linear-gradient(135deg, var(--c-accent), #B8935A)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 10px 30px rgba(212,176,119,0.35)" }}>
+                  <Check size={36} strokeWidth={3} style={{ color: "var(--c-accent-fg)" }} />
                 </motion.div>
                 <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 9px" }}>Anfrage gesendet!</h2>
                 <p style={{ color: "var(--c-fg-muted)", fontSize: 14.5, lineHeight: 1.6, maxWidth: 330, margin: "0 auto" }}>
